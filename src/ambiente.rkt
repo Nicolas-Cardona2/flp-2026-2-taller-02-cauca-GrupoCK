@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Nombre1 Codigo1, Nombre2 Codigo2
+;Autores: Nicolas <codigo>
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; El TAD ambiente, la búsqueda de ligaduras y el ambiente inicial.
@@ -26,18 +26,48 @@
 (require "sintaxis.rkt")
 (require "valores.rkt")
 
+;; Datatype ambiente (Parte 1: variantes ambiente-vacio y ambiente-extendido).
+;; La variante ambiente-recursivo se agrega en la Parte 4.
+(define-datatype ambiente ambiente?
+  (ambiente-vacio)
+  (ambiente-extendido
+   (ids (list-of symbol?))
+   (valores list?)
+   (env ambiente?)))
+
+;; posicion-de : symbol x lista de symbol -> int | #f
+;; Retorna la posicion de la primera aparicion de id en la lista, o #f si
+;; no esta.
+(define posicion-de
+  (lambda (id ids)
+    (letrec ((buscar (lambda (lst i)
+                       (cond
+                         ((null? lst) #f)
+                         ((eqv? (car lst) id) i)
+                         (else (buscar (cdr lst) (+ i 1)))))))
+      (buscar ids 0))))
+
 ;; apply-env : ambiente x symbol -> valor
 ;; Busca el identificador en el ambiente, respetando el shadowing de las
 ;; ligaduras más recientes, y levanta eopl:error si no está ligado.
 (define apply-env
   (lambda (env id)
-    (eopl:error 'apply-env "Sin implementar")))
+    (cases ambiente env
+      (ambiente-vacio ()
+        (eopl:error 'apply-env "Variable no ligada: ~s" id))
+      (ambiente-extendido (ids valores env-padre)
+        (let ((pos (posicion-de id ids)))
+          (if pos
+              (list-ref valores pos)
+              (apply-env env-padre id)))))))
 
 ;; ambiente-inicial : -> ambiente
 ;; El ambiente con que arranca todo programa:
 ;; n = 10, m = 3, p = 7, q = 2, r = 5.
 (define ambiente-inicial
   (lambda ()
-    (eopl:error 'ambiente-inicial "Sin implementar")))
+    (ambiente-extendido '(n m p q r)
+                        '(10 3 7 2 5)
+                        (ambiente-vacio))))
 
 (provide (all-defined-out))

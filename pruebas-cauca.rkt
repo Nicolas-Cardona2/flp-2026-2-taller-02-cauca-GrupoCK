@@ -203,11 +203,67 @@ in case dia of 1 => 100 of 3 => 300 otherwise => 0 end end") 0))
               (check-exn exn:fail?
                          (lambda () (corre "case true of 1 => 1 otherwise => 0 end"))))))
 
+;; Suites del grupo
+
+(define primitivas-grupo
+  (test-suite
+   "Parte 2: Bateria de pruebas"
+
+   ;; abs (unaria sobre numeros)
+   (test-case "abs con negativos y positivos"
+              (check-equal? (corre "abs(-15)") 15)
+              (check-equal? (corre "abs(42)") 42)
+              (check-equal? (corre "abs(-(10, 25))") 15)
+              (check-exn exn:fail? (lambda () (corre "abs(true)"))))
+
+   ;; mcd (n-aria sobre enteros, n >= 2)
+   (test-case "mcd con dos y tres enteros"
+              (check-equal? (corre "mcd(24, 36)") 12)
+              (check-equal? (corre "mcd(100, 25, 15)") 5)
+              (check-equal? (corre "mcd(17, 13)") 1)
+              (check-exn exn:fail? (lambda () (corre "mcd(24, 3.5)"))))
+
+   ;; mcm (n-aria sobre enteros, n >= 2)
+   (test-case "mcm con dos y tres enteros"
+              (check-equal? (corre "mcm(4, 6)") 12)
+              (check-equal? (corre "mcm(3, 5, 7)") 105)
+              (check-equal? (corre "mcm(12, 18, 24)") 72)
+              (check-exn exn:fail? (lambda () (corre "mcm(12)"))))
+
+   ;; promedio (n-aria sobre numeros, n >= 1)
+   (test-case "promedio con uno y varios numeros"
+              (check-equal? (corre "promedio(10)") 10)
+              (check-equal? (corre "promedio(10, 20, 30)") 20)
+              (check-equal? (corre "promedio(4, 5, 6, 7)") 11/2)
+              (check-exn exn:fail? (lambda () (corre "promedio(10, false)"))))
+
+   ;; xor (binaria sobre booleanos)
+   (test-case "xor con valores de verdad y fallo con numero"
+              (check-equal? (corre "xor(true, false)") #t)
+              (check-equal? (corre "xor(true, true)") #f)
+              (check-equal? (corre "xor(false, false)") #f)
+              (check-exn exn:fail? (lambda () (corre "xor(true, 5)"))))
+
+   ;; implica (binaria sobre booleanos)
+   (test-case "implica con valores de verdad y fallo de tipo"
+              (check-equal? (corre "implica(true, false)") #f)
+              (check-equal? (corre "implica(true, true)") #t)
+              (check-equal? (corre "implica(false, false)") #t)
+              (check-exn exn:fail? (lambda () (corre "implica(false, 0)"))))
+
+   ;; entre (ternaria sobre numeros: entre(x, a, b))
+   (test-case "entre dentro, en frontera y fuera de rango"
+              (check-equal? (corre "entre(5, 1, 10)") #t)
+              (check-equal? (corre "entre(10, 10, 20)") #t)
+              (check-equal? (corre "entre(25, 1, 20)") #f)
+              (check-exn exn:fail? (lambda () (corre "entre(5, true, 10)"))))))
+
 ;; Las suites que agregue el grupo se declaran arriba y se suman aquí.
 
 (define fallidas
   (+ (run-tests base)
      (run-tests primitivas-nuevas)
+     (run-tests primitivas-grupo)
      (run-tests procedimientos)
      (run-tests recursion-y-case)))
 

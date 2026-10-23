@@ -48,8 +48,49 @@
   Ejecución del lenguaje base
     (interpretar "...")   =>
 
-  Primitivas nuevas
-    (interpretar "...")   =>
+;; Primitivas nuevas
+
+;; 1. abs
+;;    (evaluar-primitiva (abs-prim) '(-15))      => 15
+;;    (evaluar-primitiva (abs-prim) '(42))       => 42
+;;    (evaluar-primitiva (abs-prim) '(-3.14))    => 3.14
+;;    (evaluar-primitiva (abs-prim) '(#t))       => error: "abs: El argumento debe ser un numero: #t"
+;;
+;; 2. mcd
+;;    (evaluar-primitiva (mcd-prim) '(24 36))    => 12
+;;    (evaluar-primitiva (mcd-prim) '(100 25 15))=> 5
+;;    (evaluar-primitiva (mcd-prim) '(17 13))    => 1
+;;    (evaluar-primitiva (mcd-prim) '(24 3.5))   => error: "mcd: El argumento debe ser un entero: 3.5"
+;;
+;; 3. mcm
+;;    (evaluar-primitiva (mcm-prim) '(4 6))      => 12
+;;    (evaluar-primitiva (mcm-prim) '(3 5 7))    => 105
+;;    (evaluar-primitiva (mcm-prim) '(12 18 24)) => 72
+;;    (evaluar-primitiva (mcm-prim) '(12))       => error: "mcm: Se esperaban al menos 2 argumentos y llegaron 1"
+;;
+;; 4. promedio
+;;    (evaluar-primitiva (promedio-prim) '(10))       => 10
+;;    (evaluar-primitiva (promedio-prim) '(10 20 30)) => 20
+;;    (evaluar-primitiva (promedio-prim) '(4 5 6 7))  => 11/2
+;;    (evaluar-primitiva (promedio-prim) '(10 #f))    => error: "promedio: El argumento debe ser un numero: #f"
+;;
+;; 5. xor
+;;    (evaluar-primitiva (xor-prim) '(#t #f))    => #t
+;;    (evaluar-primitiva (xor-prim) '(#t #t))    => #f
+;;    (evaluar-primitiva (xor-prim) '(#f #f))    => #f
+;;    (evaluar-primitiva (xor-prim) '(#t 5))     => error: "xor: El argumento debe ser un booleano: 5"
+;;
+;; 6. implica
+;;    (evaluar-primitiva (implica-prim) '(#t #f))=> #f
+;;    (evaluar-primitiva (implica-prim) '(#t #t))=> #t
+;;    (evaluar-primitiva (implica-prim) '(#f #f))=> #t
+;;    (evaluar-primitiva (implica-prim) '(#f 0)) => error: "implica: El argumento debe ser un booleano: 0"
+;;
+;; 7. entre
+;;    (evaluar-primitiva (entre-prim) '(5 1 10)) => #t
+;;    (evaluar-primitiva (entre-prim) '(10 10 20))=> #t
+;;    (evaluar-primitiva (entre-prim) '(25 1 20))=> #f
+;;    (evaluar-primitiva (entre-prim) '(5 #t 10))=> error: "entre: El argumento debe ser un numero: #t"
 
   Procedimientos
     (interpretar "...")   =>

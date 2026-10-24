@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Nombre1 Codigo1, Nombre2 Codigo2
+;Autores: Nombre1 Codigo1, Laura Sofía Echeverry González 2477067
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; Fachada: reúne los seis módulos de src/ y reexporta todo lo que
@@ -92,8 +92,67 @@
 ;;    (evaluar-primitiva (entre-prim) '(25 1 20))=> #f
 ;;    (evaluar-primitiva (entre-prim) '(5 #t 10))=> error: "entre: El argumento debe ser un numero: #t"
 
-  Procedimientos
-    (interpretar "...")   =>
+  procedimientos y clausuras — parte 3
+
+  1. procedimiento sin parametros
+     (interpretar
+      "let constante = proc () 7 end
+       in apply constante () end")
+     => 7
+
+  2. procedimiento de un parametro
+     (interpretar
+      "let doble = proc (x) *(x, 2) end
+       in apply doble (6) end")
+     => 12
+
+  3. procedimiento de varios parametros
+     (interpretar
+      "let sumar = proc (a, b, c) +(a, b, c) end
+       in apply sumar (2, 3, 4) end")
+     => 9
+
+  4. procedimiento que recibe otro procedimiento
+     (interpretar
+      "let aplicardos = proc (f, x) apply f (apply f (x)) end
+           doble = proc (v) *(v, 2) end
+       in apply aplicardos (doble, 5) end")
+     => 20
+
+  5. procedimiento que retorna otro procedimiento
+     (interpretar
+      "let sumador = proc (a)
+                      proc (b) +(a, b) end
+                    end
+       in
+         let suma3 = apply sumador (3)
+         in apply suma3 (4) end
+       end")
+     => 7
+
+  6. contraste: se conserva el ambiente de definicion
+     (interpretar
+      "let factor = 10
+       in
+         let escalar = proc (v) *(v, factor) end
+         in
+           let factor = 1000
+           in apply escalar (5) end
+         end
+       end")
+     => 50
+
+  7. error: el operador no es un procedimiento
+     (interpretar "apply 5 (1)")
+     => error de app-exp:
+        "el operador no es un procedimiento: 5"
+
+  8. error: cantidad incorrecta de argumentos
+     (interpretar
+      "let sumar = proc (a, b) +(a, b) end
+       in apply sumar (1) end")
+     => error de apply-procedure:
+        "se esperaban 2 argumento(s) y llegaron 1"
 
   Recursión y case
     (interpretar "...")   =>

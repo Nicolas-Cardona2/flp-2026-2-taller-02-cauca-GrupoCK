@@ -258,6 +258,95 @@ in case dia of 1 => 100 of 3 => 300 otherwise => 0 end end") 0))
               (check-equal? (corre "entre(25, 1, 20)") #f)
               (check-exn exn:fail? (lambda () (corre "entre(5, true, 10)"))))))
 
+;; procedimientos-grupo: suite de pruebas adicionales de la Parte 3.
+;; Proposito: comprobar clausuras, ambientes y errores de aplicacion.
+(define procedimientos-grupo
+  (test-suite
+   "Parte 3: pruebas adicionales de Soku"
+
+   (test-case "crear un procedimiento no evalua su cuerpo"
+     (check-equal?
+      (corre
+       "let pendiente = proc () variableinexistente end
+        in 42 end")
+      42))
+
+   (test-case "aplicar un procedimiento si evalua su cuerpo"
+     (check-exn
+      #rx"Variable no ligada: variableinexistente"
+      (lambda ()
+        (corre
+         "let pendiente = proc () variableinexistente end
+          in apply pendiente () end"))))
+
+   (test-case "un parametro oculta una variable exterior"
+     (check-equal?
+      (corre
+       "let x = 100
+        in
+          let identidad = proc (x) x end
+          in apply identidad (7) end
+        end")
+      7))
+
+   (test-case "los argumentos se evaluan en el ambiente de llamada"
+     (check-equal?
+      (corre
+       "let x = 10
+        in
+          let sumarx = proc (y) +(x, y) end
+          in
+            let x = 100
+            in apply sumarx (x) end
+          end
+        end")
+      110))
+
+   (test-case "la clausura retornada conserva su ambiente"
+     (check-equal?
+      (corre
+       "let creador = proc (a)
+                       proc (b) +(a, b) end
+                     end
+        in
+          let sumar8 = apply creador (8)
+          in
+            let a = 1000
+            in apply sumar8 (2) end
+          end
+        end")
+      10))
+
+   (test-case "se rechazan argumentos de mas"
+     (check-exn
+      #rx"se esperaban 1 argumento"
+      (lambda ()
+        (corre
+         "let identidad = proc (x) x end
+          in apply identidad (1, 2) end"))))
+
+   (test-case "se rechazan argumentos de menos"
+     (check-exn
+      #rx"se esperaban 2 argumento"
+      (lambda ()
+        (corre
+         "let sumar = proc (a, b) +(a, b) end
+          in apply sumar (1) end"))))
+
+   (test-case "el operador se verifica antes de evaluar argumentos"
+     (check-exn
+      #rx"el operador no es un procedimiento"
+      (lambda ()
+        (corre "apply 5 (variableinexistente)"))))
+
+   (test-case "los argumentos se evaluan de izquierda a derecha"
+     (check-exn
+      #rx"Variable no ligada: primera"
+      (lambda ()
+        (corre
+         "let tomar = proc (a, b) a end
+          in apply tomar (primera, segunda) end"))))))
+
 ;; Las suites que agregue el grupo se declaran arriba y se suman aquí.
 
 (define fallidas
@@ -265,6 +354,7 @@ in case dia of 1 => 100 of 3 => 300 otherwise => 0 end end") 0))
      (run-tests primitivas-nuevas)
      (run-tests primitivas-grupo)
      (run-tests procedimientos)
+     (run-tests procedimientos-grupo)
      (run-tests recursion-y-case)))
 
 (eopl:printf "~%==========================================~%")

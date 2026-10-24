@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Nombre1 Codigo1, Nombre2 Codigo2
+;Autores: Laura Sofía Echeverry González 2477067
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; El valor procedimiento. Requiere sintaxis.rkt.
@@ -20,5 +20,16 @@
 ;; campo que queda sin verificar.
 
 (require "sintaxis.rkt")
+
+#| procval: tipo de dato que representa los procedimientos de cauca.
+cerradura : lista de simbolos x expresion x ambiente -> procval
+proposito: guardar los parametros, el cuerpo sin evaluar y el
+ambiente de definicion del procedimiento. |#
+
+(define-datatype procval procval?
+  (cerradura
+    (ids (list-of symbol?))
+    (body expresion?)
+    (env (lambda (v) #t))))
 
 (provide (all-defined-out))

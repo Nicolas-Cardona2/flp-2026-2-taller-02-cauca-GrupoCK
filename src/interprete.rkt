@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Nicolas <codigo>
+;Autores: Nicolás Cardona García 2477349, Laura Sofía Echeverry González 2477067
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; El recorrido de la sintaxis abstracta y la aplicación de
@@ -20,7 +20,17 @@
 ;; ligaduras de los parámetros, no en el ambiente de la llamada.
 (define apply-procedure
   (lambda (proc args)
-    (eopl:error 'apply-procedure "Sin implementar")))
+    (cases procval proc
+      (cerradura (ids body env-definicion)
+        (if (= (length ids) (length args))
+            (evaluar-expresion
+             body
+             (ambiente-extendido ids args env-definicion))
+            (eopl:error
+             'apply-procedure
+             "se esperaban ~s argumento(s) y llegaron ~s"
+             (length ids)
+             (length args)))))))
 
 ;; evaluar-programa : programa -> valor
 ;; Punto de entrada: evalúa la expresión del programa en el ambiente
@@ -52,6 +62,22 @@
       (var-exp (id) (apply-env env id))
       (true-exp () #t)
       (false-exp () #f)
+
+      ;; crea la clausura sin evaluar el cuerpo.
+      (proc-exp (ids body)
+        (cerradura ids body env))
+
+      ;; verifica el operador antes de evaluar los argumentos.
+      (app-exp (rator rands)
+        (let ((proc (evaluar-expresion rator env)))
+          (if (procval? proc)
+              (let ((args (evaluar-rands rands env)))
+                (apply-procedure proc args))
+              (eopl:error
+               'app-exp
+               "el operador no es un procedimiento: ~s"
+               proc))))
+      
       (prim-exp (prim rands)
         (let ((args (evaluar-rands rands env)))
           (evaluar-primitiva prim args)))

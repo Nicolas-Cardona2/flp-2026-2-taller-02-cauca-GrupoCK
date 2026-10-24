@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Nicolas <codigo>
+;Autores: Nicolás Cardona García 2477349, Laura Sofía Echeverry González 2477067
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; Especificación léxica, especificación gramatical, scanner y parser.
@@ -51,6 +51,15 @@
     (expresion (primitiva "(" (separated-list expresion ",") ")") prim-exp)
     (expresion ("if" expresion "then" expresion "else" expresion "end") if-exp)
     (expresion ("let" (arbno identificador "=" expresion) "in" expresion "end") let-exp)
+
+;; parte 3: definicion y aplicacion de procedimientos.
+    (expresion
+     ("proc" "(" (separated-list identificador ",") ")" expresion "end")
+     proc-exp)
+
+    (expresion
+     ("apply" expresion "(" (separated-list expresion ",") ")")
+     app-exp)
 
     (primitiva ("+") sum-prim)
     (primitiva ("-") minus-prim)

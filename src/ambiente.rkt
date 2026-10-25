@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Nicolas <codigo>
+;Autores: Nicolás Cardona García 2477349, Santiago Serrano Morales 2477006
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; El TAD ambiente, la búsqueda de ligaduras y el ambiente inicial.
@@ -27,12 +27,16 @@
 (require "valores.rkt")
 
 ;; Datatype ambiente (Parte 1: variantes ambiente-vacio y ambiente-extendido).
-;; La variante ambiente-recursivo se agrega en la Parte 4.
 (define-datatype ambiente ambiente?
   (ambiente-vacio)
   (ambiente-extendido
    (ids (list-of symbol?))
    (valores list?)
+   (env ambiente?))
+  (ambiente-recursivo ;; Datatype ambiente (Parte 4: variante ambiente-recursivo)
+   (proc-names (list-of symbol?))
+   (idss list?)
+   (bodies list?)
    (env ambiente?)))
 
 ;; posicion-de : symbol x lista de symbol -> int | #f
@@ -57,8 +61,14 @@
         (eopl:error 'apply-env "Variable no ligada: ~s" id))
       (ambiente-extendido (ids valores env-padre)
         (let ((pos (posicion-de id ids)))
-          (if pos
+          (if (number? pos)
               (list-ref valores pos)
+              (apply-env env-padre id))))
+      (ambiente-recursivo (proc-names idss bodies env-padre) ;; Datatype ambiente (Parte 4: variante ambiente-recursivo)
+        (let ((pos (posicion-de id proc-names)))
+          (if pos
+              (cerradura (list-ref idss pos)
+                         (list-ref bodies pos) env)
               (apply-env env-padre id)))))))
 
 ;; ambiente-inicial : -> ambiente

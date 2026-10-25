@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Nombre1 Codigo1, Nombre2 Codigo2
+;Autores: Santiago Serrano Morales 247706, Laura Sofía Echeverry González 2477067, Nicolás Cardona García 2477349, Samuel Peña Jaramillo 2477399 
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; Batería de pruebas con rackunit. Llega escrita en el fork y no se
@@ -209,49 +209,42 @@ in case dia of 1 => 100 of 3 => 300 otherwise => 0 end end") 0))
   (test-suite
    "Parte 2: Bateria de pruebas"
 
-   ;; abs (unaria sobre numeros)
    (test-case "abs con negativos y positivos"
               (check-equal? (corre "abs(-15)") 15)
               (check-equal? (corre "abs(42)") 42)
               (check-equal? (corre "abs(-(10, 25))") 15)
               (check-exn exn:fail? (lambda () (corre "abs(true)"))))
 
-   ;; mcd (n-aria sobre enteros, n >= 2)
    (test-case "mcd con dos y tres enteros"
               (check-equal? (corre "mcd(24, 36)") 12)
               (check-equal? (corre "mcd(100, 25, 15)") 5)
               (check-equal? (corre "mcd(17, 13)") 1)
               (check-exn exn:fail? (lambda () (corre "mcd(24, 3.5)"))))
 
-   ;; mcm (n-aria sobre enteros, n >= 2)
    (test-case "mcm con dos y tres enteros"
               (check-equal? (corre "mcm(4, 6)") 12)
               (check-equal? (corre "mcm(3, 5, 7)") 105)
               (check-equal? (corre "mcm(12, 18, 24)") 72)
               (check-exn exn:fail? (lambda () (corre "mcm(12)"))))
 
-   ;; promedio (n-aria sobre numeros, n >= 1)
    (test-case "promedio con uno y varios numeros"
               (check-equal? (corre "promedio(10)") 10)
               (check-equal? (corre "promedio(10, 20, 30)") 20)
               (check-equal? (corre "promedio(4, 5, 6, 7)") 11/2)
               (check-exn exn:fail? (lambda () (corre "promedio(10, false)"))))
 
-   ;; xor (binaria sobre booleanos)
    (test-case "xor con valores de verdad y fallo con numero"
               (check-equal? (corre "xor(true, false)") #t)
               (check-equal? (corre "xor(true, true)") #f)
               (check-equal? (corre "xor(false, false)") #f)
               (check-exn exn:fail? (lambda () (corre "xor(true, 5)"))))
 
-   ;; implica (binaria sobre booleanos)
    (test-case "implica con valores de verdad y fallo de tipo"
               (check-equal? (corre "implica(true, false)") #f)
               (check-equal? (corre "implica(true, true)") #t)
               (check-equal? (corre "implica(false, false)") #t)
               (check-exn exn:fail? (lambda () (corre "implica(false, 0)"))))
 
-   ;; entre (ternaria sobre numeros: entre(x, a, b))
    (test-case "entre dentro, en frontera y fuera de rango"
               (check-equal? (corre "entre(5, 1, 10)") #t)
               (check-equal? (corre "entre(10, 10, 20)") #t)
@@ -347,6 +340,209 @@ in case dia of 1 => 100 of 3 => 300 otherwise => 0 end end") 0))
          "let tomar = proc (a, b) a end
           in apply tomar (primera, segunda) end"))))))
 
+;; Recursion y seleccion por valor: suite de pruebas adiccionales de la parte 4
+;; Proposito: Validar la recursion con letrec y la seleccion de casos con case
+(define recursion-y-case-grupo
+  (test-suite
+   "Parte 4: pruebas del grupo de Santiago"
+
+   (test-case "letrec: factorial recursivo"
+     (check-equal?
+      (corre
+       "letrec
+          factorial(n) =
+            if ==(n, 0)
+            then 1
+            else *(n, apply factorial(sub1(n)))
+            end
+        in apply factorial(6) end") 720))
+   
+   (test-case "letrec: potencia con dos parametros"
+     (check-equal?
+      (corre
+       "letrec
+          potencia(base, exp) =
+            if ==(exp, 0)
+            then 1
+            else *(base, apply potencia(base, sub1(exp)))
+            end
+        in apply potencia(3, 4) end") 81))
+
+   (test-case "letrec: procedimientos mutuamente recursivos"
+     (check-equal?
+      (corre
+       "letrec
+          par?(n) =
+            if ==(n, 0)
+            then true
+            else apply impar?(sub1(n))
+            end
+          impar?(n) =
+            if ==(n, 0)
+            then false
+            else apply par?(sub1(n))
+            end
+        in apply par?(9) end") #f)
+     (check-equal?
+      (corre
+       "letrec
+          par?(n) =
+            if ==(n, 0)
+            then true
+            else apply impar?(sub1(n))
+            end
+          impar?(n) =
+            if ==(n, 0)
+            then false
+            else apply par?(sub1(n))
+            end
+        in apply impar?(8) end") #f))
+
+   (test-case "letrec: procedimiento pasado como argumento"
+     (check-equal?
+      (corre
+       "letrec
+          aplicarn(f, x, veces) =
+            if ==(veces, 0)
+            then x
+            else apply f(apply aplicarn(f, x, sub1(veces)))
+            end
+        in
+          let doble = proc(v) *(v, 2) end
+          in
+            apply aplicarn(doble, 3, 3) end end") 24))
+
+   (test-case "case: selecciona la primera coincidencia"
+     (check-equal?
+      (corre
+       "case 2
+          of 2 => 100
+          of 2 => 200
+          otherwise => 0 end") 100))
+
+   (test-case "case: ejecuta otherwise"
+     (check-equal?
+      (corre
+       "case 8
+          of 1 => 100
+          of 3 => 300
+          otherwise => 99 end") 99))
+
+   (test-case "case: selecciona la rama correcta"
+     (check-equal?
+      (corre
+       "case +(1, 2)
+          of 1 => 100
+          of 3 => 300
+          otherwise => 0 end") 300))
+
+   (test-case "case: rechaza un control booleano"
+     (check-exn
+      exn:fail?
+      (lambda ()
+        (corre
+         "case false
+            of 1 => 100
+            otherwise => 0 end"))))
+   
+   (test-case "letrec: suma recursiva"
+    (check-equal?
+      (corre
+        "letrec
+           suma(n) =
+             if ==(n, 0)
+             then 0
+             else +(n, apply suma(sub1(n))) end
+         in
+           apply suma(5) end") 15))
+
+  (test-case "letrec: factorial de cero"
+    (check-equal?
+      (corre
+        "letrec
+           factorial(n) =
+             if ==(n, 0)
+             then 1
+             else *(n, apply factorial(sub1(n)))
+             end
+         in
+           apply factorial(0) end") 1))
+
+  (test-case "letrec: potencia con exponente cero"
+    (check-equal?
+      (corre
+        "letrec
+           potencia(base, exp) =
+             if ==(exp, 0)
+             then 1
+             else *(base, apply potencia(base, sub1(exp)))
+             end
+         in
+           apply potencia(7, 0) end") 1))
+
+  (test-case "letrec: potencia de dos parametros"
+    (check-equal?
+      (corre
+        "letrec
+           potencia(base, exp) =
+             if ==(exp, 0)
+             then 1
+             else *(base, apply potencia(base, sub1(exp)))
+             end
+         in
+           apply potencia(2, 5) end") 32))
+
+  (test-case "letrec: procedimiento como argumento"
+    (check-equal?
+      (corre
+        "letrec
+           aplicar(f, n) = apply f(n)
+           doble(x) = *(2, x)
+         in
+           apply aplicar(doble, 6) end") 12))
+
+  (test-case "case: selecciona una coincidencia posterior"
+    (check-equal?
+      (corre
+        "case 7 of
+           1 => 10
+         of 4 => 40
+         of 7 => 70
+         otherwise => 0 end") 70))
+
+  (test-case "case: coincidencia en rama posterior"
+    (check-equal?
+      (corre
+        "case 4 of
+           1 => 10
+         of 2 => 20
+         of 4 => 40
+         otherwise => 0 end") 40))
+
+  (test-case "case: otherwise con numero negativo"
+    (check-equal?
+      (corre
+        "case -5 of
+           1 => 10
+         of 2 => 20
+         otherwise => 99 end") 99))
+
+  (test-case "case: control calculado"
+    (check-equal?
+      (corre
+        "case +(2, 4) of
+           1 => 10
+         of 3 => 30
+         otherwise => 99 end") 99))
+
+  (test-case "case: coincidencia con cero"
+    (check-equal?
+      (corre
+        "case 0 of
+           0 => 100
+         of 1 => 200
+         otherwise => 300 end") 100))))
+
 ;; Las suites que agregue el grupo se declaran arriba y se suman aquí.
 
 (define fallidas
@@ -355,7 +551,8 @@ in case dia of 1 => 100 of 3 => 300 otherwise => 0 end end") 0))
      (run-tests primitivas-grupo)
      (run-tests procedimientos)
      (run-tests procedimientos-grupo)
-     (run-tests recursion-y-case)))
+     (run-tests recursion-y-case)
+     (run-tests recursion-y-case-grupo)))
 
 (eopl:printf "~%==========================================~%")
 (eopl:printf "  pruebas fallidas en total: ~s~%" fallidas)

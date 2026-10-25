@@ -543,6 +543,106 @@ in case dia of 1 => 100 of 3 => 300 otherwise => 0 end end") 0))
          of 1 => 200
          otherwise => 300 end") 100))))
 
+;; scanner-parser-grupo: suite de pruebas de scanner y parser (Nicolas).
+;; Proposito: comprobar los tokens, el AST que construye el parser para
+;; cada constructor de la gramatica y los errores lexicos y sintacticos.
+
+;; tokens-de-clase : string x symbol -> lista
+;; Retorna los valores de los tokens de una clase (identificador, numero).
+;; Las palabras reservadas llevan un nombre interno de SLLGEN, por eso el
+;; scanner se prueba por clase de token y por cantidad de tokens.
+(define tokens-de-clase
+  (lambda (texto clase)
+    (letrec ((recoger (lambda (tokens)
+                        (cond
+                          ((null? tokens) '())
+                          ((eq? (car (car tokens)) clase)
+                           (cons (cadr (car tokens)) (recoger (cdr tokens))))
+                          (else (recoger (cdr tokens)))))))
+      (recoger (scanner texto)))))
+
+(define scanner-parser-grupo
+  (test-suite
+   "Scanner y parser: pruebas de Nicolas"
+
+   ;; ---------- scanner ----------
+   (test-case "scanner: identificadores con letras, digitos, _ y ?"
+              (check-equal? (tokens-de-clase "x y2 z_1 par?" 'identificador)
+                            '(x y2 z_1 par?)))
+   (test-case "scanner: enteros y flotantes con signo"
+              (check-equal? (tokens-de-clase "42 -7 3.14 -0.5" 'numero)
+                            '(42 -7 3.14 -0.5)))
+   (test-case "scanner: comentarios y espacios se ignoran"
+              (check-equal? (scanner "// solo un comentario\n   ") '())
+              (check-equal? (tokens-de-clase "// c\n 7 // otro" 'numero) '(7)))
+   (test-case "scanner: una primitiva con sus argumentos son seis tokens"
+              (check-equal? (length (scanner "+(1, 2)")) 6))
+   (test-case "scanner: el guion abre un numero negativo"
+              (check-equal? (tokens-de-clase "aplicar-5" 'identificador) '(aplicar))
+              (check-equal? (tokens-de-clase "aplicar-5" 'numero) '(-5)))
+   (test-case "scanner: las palabras reservadas no son identificadores"
+              (check-equal? (tokens-de-clase "if then else end let in true false" 'identificador)
+                            '()))
+
+   ;; ---------- parser: gramatica base ----------
+   (test-case "parser: literal, variable y booleanos"
+              (check-equal? (parser "42") (a-program (lit-exp 42)))
+              (check-equal? (parser "x") (a-program (var-exp 'x)))
+              (check-equal? (parser "true") (a-program (true-exp)))
+              (check-equal? (parser "false") (a-program (false-exp))))
+   (test-case "parser: primitiva con sus argumentos"
+              (check-equal? (parser "+(1, 2)")
+                            (a-program (prim-exp (sum-prim) (list (lit-exp 1) (lit-exp 2)))))
+              (check-equal? (parser "add1(x)")
+                            (a-program (prim-exp (add-prim) (list (var-exp 'x))))))
+   (test-case "parser: condicional"
+              (check-equal? (parser "if true then 1 else 2 end")
+                            (a-program (if-exp (true-exp) (lit-exp 1) (lit-exp 2)))))
+   (test-case "parser: let con varias ligaduras y let anidado"
+              (check-equal? (parser "let a = 1 b = 2 in a end")
+                            (a-program (let-exp '(a b)
+                                                (list (lit-exp 1) (lit-exp 2))
+                                                (var-exp 'a))))
+              (check-equal? (parser "let a = 1 in let b = 2 in b end end")
+                            (a-program (let-exp '(a) (list (lit-exp 1))
+                                                (let-exp '(b) (list (lit-exp 2)) (var-exp 'b))))))
+
+   ;; ---------- parser: extensiones ----------
+   (test-case "parser: primitiva nueva"
+              (check-equal? (parser "abs(-3)")
+                            (a-program (prim-exp (abs-prim) (list (lit-exp -3))))))
+   (test-case "parser: proc y apply"
+              (check-equal? (parser "proc (x, y) x end")
+                            (a-program (proc-exp '(x y) (var-exp 'x))))
+              (check-equal? (parser "apply f (1, 2)")
+                            (a-program (app-exp (var-exp 'f) (list (lit-exp 1) (lit-exp 2))))))
+   (test-case "parser: letrec"
+              (check-equal? (parser "letrec f (a) = a in apply f (1) end")
+                            (a-program (letrec-exp '(f) '((a)) (list (var-exp 'a))
+                                                   (app-exp (var-exp 'f) (list (lit-exp 1)))))))
+   (test-case "parser: case con una y con varias ramas"
+              (check-equal? (parser "case 7 of 1 => 10 otherwise => 0 end")
+                            (a-program (case-exp (lit-exp 7) 1 (lit-exp 10) '() '() (lit-exp 0))))
+              (check-equal? (parser "case 7 of 1 => 10 of 2 => 20 otherwise => 0 end")
+                            (a-program (case-exp (lit-exp 7) 1 (lit-exp 10)
+                                                 '(2) (list (lit-exp 20)) (lit-exp 0)))))
+
+   ;; ---------- errores sintacticos ----------
+   (test-case "parser: errores sintacticos"
+              (check-exn exn:fail? (lambda () (parser "if true then 1 else 2")))
+              (check-exn exn:fail? (lambda () (parser "let x 5 in x end")))
+              (check-exn exn:fail? (lambda () (parser "+(1, 2")))
+              (check-exn exn:fail? (lambda () (parser "case 1 otherwise => 0 end"))))
+
+   ;; ---------- errores de la base que la bateria original no cubre ----------
+   (test-case "primitivas: tipo, cantidad y division por cero"
+              (check-exn exn:fail? (lambda () (corre "+(1, true)")))
+              (check-exn exn:fail? (lambda () (corre "not(1)")))
+              (check-exn exn:fail? (lambda () (corre "add1(1, 2)")))
+              (check-exn exn:fail? (lambda () (corre "/(1, 0)"))))
+   (test-case "let evalua las expresiones en el ambiente externo"
+              (check-equal? (corre "let n = 1 m = n in m end") 10))))
+
 ;; Las suites que agregue el grupo se declaran arriba y se suman aquí.
 
 (define fallidas
@@ -552,7 +652,8 @@ in case dia of 1 => 100 of 3 => 300 otherwise => 0 end end") 0))
      (run-tests procedimientos)
      (run-tests procedimientos-grupo)
      (run-tests recursion-y-case)
-     (run-tests recursion-y-case-grupo)))
+     (run-tests recursion-y-case-grupo)
+     (run-tests scanner-parser-grupo)))
 
 (eopl:printf "~%==========================================~%")
 (eopl:printf "  pruebas fallidas en total: ~s~%" fallidas)

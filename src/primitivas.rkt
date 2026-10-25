@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Nicolas <codigo>, Samuel Peña Jaramillo 2477399
+;Autores: Nicolás Cardona García 2477349, Samuel Peña Jaramillo 2477399
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; Las primitivas del lenguaje y las verificaciones de tipo y de

@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Nicolás Cardona García 2477349, Laura Sofía Echeverry González 2477067
+;Autores: Nicolás Cardona García 2477349, Laura Sofía Echeverry González 2477067, Santiago Serrano Morales 2577006
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; Especificación léxica, especificación gramatical, scanner y parser.
@@ -51,6 +51,10 @@
     (expresion (primitiva "(" (separated-list expresion ",") ")") prim-exp)
     (expresion ("if" expresion "then" expresion "else" expresion "end") if-exp)
     (expresion ("let" (arbno identificador "=" expresion) "in" expresion "end") let-exp)
+;; Parte 4: definicion de procedimientos recursivos y seleccion de alternativas con case
+    (expresion ("letrec" (arbno identificador "(" ( separated-list identificador ",") ")" "=" expresion) "in" expresion "end") letrec-exp)
+    (expresion ("case" expresion "of" numero "=>" expresion (arbno "of" numero "=>" expresion) "otherwise" "=>" expresion "end") case-exp)
+    
 
 ;; parte 3: definicion y aplicacion de procedimientos.
     (expresion

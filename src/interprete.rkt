@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Nicolás Cardona García 2477349, Laura Sofía Echeverry González 2477067
+;Autores: Nicolás Cardona García 2477349, Laura Sofía Echeverry González 2477067, Santiago Serrano Morales 2477006
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; El recorrido de la sintaxis abstracta y la aplicación de
@@ -50,6 +50,20 @@
         (let ((valor (evaluar-expresion (car rands) env)))
           (cons valor (evaluar-rands (cdr rands) env))))))
 
+;; seleccionar-caso : numero x lista de numeros x lista de expresiones
+;;                    x expresion x ambiente -> valor
+;; Busca la primera alternativa cuyo valor coincide con el control.
+;; Si ninguna coincide, evalua la expresion predeterminada.
+(define seleccionar-caso
+  (lambda (control valores acciones default env)
+    (cond
+      [(null? valores)
+       (evaluar-expresion default env)]
+      [(= control (car valores))
+       (evaluar-expresion (car acciones) env)]
+      [else
+       (seleccionar-caso control (cdr valores) (cdr acciones) default env)])))
+  
 ;; evaluar-expresion : expresion x ambiente -> valor
 ;; Recorre el árbol de sintaxis abstracta con cases y evalúa cada
 ;; variante según la semántica del enunciado. El if liga el resultado de
@@ -77,19 +91,41 @@
                'app-exp
                "el operador no es un procedimiento: ~s"
                proc))))
-      
+
       (prim-exp (prim rands)
         (let ((args (evaluar-rands rands env)))
           (evaluar-primitiva prim args)))
+
       (if-exp (test rama-then rama-else)
         (let ((test-value (evaluar-expresion test env)))
           (if (boolean? test-value)
               (if test-value
                   (evaluar-expresion rama-then env)
                   (evaluar-expresion rama-else env))
-              (eopl:error 'if-exp "La condicion debe ser booleana: ~s" test-value))))
+              (eopl:error
+               'if-exp
+               "La condicion debe ser booleana: ~s"
+               test-value))))
+
       (let-exp (ids rands body)
         (let ((args (evaluar-rands rands env)))
-          (evaluar-expresion body (ambiente-extendido ids args env)))))))
+          (evaluar-expresion body
+                             (ambiente-extendido ids args env))))
+
+      ;; Parte 4: definicion de procedimientos recursivos.
+      (letrec-exp (proc-names idss bodies body)
+        (let ((env-rec
+               (ambiente-recursivo proc-names idss bodies env)))
+          (evaluar-expresion body env-rec)))
+
+      ;; Parte 4: seleccion de alternativas mediante case.
+      (case-exp (exp primer-valor primera-accion valores acciones default)
+        (let ((control (evaluar-expresion exp env)))
+          (if (number? control)
+              (seleccionar-caso control (cons primer-valor valores) (cons primera-accion acciones) default env)
+              (eopl:error
+               'case-exp
+               "El valor de control debe ser numerico: ~s"
+               control)))))))
 
 (provide (all-defined-out))

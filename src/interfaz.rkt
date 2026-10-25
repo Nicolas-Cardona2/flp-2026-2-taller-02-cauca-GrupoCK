@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Nicolas <codigo>
+;Autores: Nicolás Cardona García 2477349
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; El punto de entrada y el REPL. Requiere sintaxis.rkt e interprete.rkt.

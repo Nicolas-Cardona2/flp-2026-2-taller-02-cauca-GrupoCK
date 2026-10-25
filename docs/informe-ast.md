@@ -17,7 +17,7 @@ de Programación — Universidad del Valle, Sede Tuluá.
 ## 1. Gramática considerada
 
 Gramática de Cauca tal como está implementada en `src/sintaxis.rkt`. Entre
-paréntesis van los campos de cada constructor del datatype.
+paréntesis van los campos de cada constructor del datatype
 
 ```bnf
 <programa>  ::= <expresion>

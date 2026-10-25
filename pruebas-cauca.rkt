@@ -543,14 +543,9 @@ in case dia of 1 => 100 of 3 => 300 otherwise => 0 end end") 0))
          of 1 => 200
          otherwise => 300 end") 100))))
 
-;; scanner-parser-grupo: suite de pruebas de scanner y parser (Nicolas).
-;; Proposito: comprobar los tokens, el AST que construye el parser para
-;; cada constructor de la gramatica y los errores lexicos y sintacticos.
-
+;; scanner-parser-grupo
 ;; tokens-de-clase : string x symbol -> lista
-;; Retorna los valores de los tokens de una clase (identificador, numero).
-;; Las palabras reservadas llevan un nombre interno de SLLGEN, por eso el
-;; scanner se prueba por clase de token y por cantidad de tokens.
+
 (define tokens-de-clase
   (lambda (texto clase)
     (letrec ((recoger (lambda (tokens)
@@ -565,7 +560,7 @@ in case dia of 1 => 100 of 3 => 300 otherwise => 0 end end") 0))
   (test-suite
    "Scanner y parser: pruebas de Nicolas"
 
-   ;; ---------- scanner ----------
+   ;;scanner 
    (test-case "scanner: identificadores con letras, digitos, _ y ?"
               (check-equal? (tokens-de-clase "x y2 z_1 par?" 'identificador)
                             '(x y2 z_1 par?)))
@@ -584,7 +579,7 @@ in case dia of 1 => 100 of 3 => 300 otherwise => 0 end end") 0))
               (check-equal? (tokens-de-clase "if then else end let in true false" 'identificador)
                             '()))
 
-   ;; ---------- parser: gramatica base ----------
+   ;; parser gramatica base
    (test-case "parser: literal, variable y booleanos"
               (check-equal? (parser "42") (a-program (lit-exp 42)))
               (check-equal? (parser "x") (a-program (var-exp 'x)))
@@ -607,7 +602,7 @@ in case dia of 1 => 100 of 3 => 300 otherwise => 0 end end") 0))
                             (a-program (let-exp '(a) (list (lit-exp 1))
                                                 (let-exp '(b) (list (lit-exp 2)) (var-exp 'b))))))
 
-   ;; ---------- parser: extensiones ----------
+   ;; parser extensiones
    (test-case "parser: primitiva nueva"
               (check-equal? (parser "abs(-3)")
                             (a-program (prim-exp (abs-prim) (list (lit-exp -3))))))
@@ -627,14 +622,14 @@ in case dia of 1 => 100 of 3 => 300 otherwise => 0 end end") 0))
                             (a-program (case-exp (lit-exp 7) 1 (lit-exp 10)
                                                  '(2) (list (lit-exp 20)) (lit-exp 0)))))
 
-   ;; ---------- errores sintacticos ----------
+   ;; errores sintactico
    (test-case "parser: errores sintacticos"
               (check-exn exn:fail? (lambda () (parser "if true then 1 else 2")))
               (check-exn exn:fail? (lambda () (parser "let x 5 in x end")))
               (check-exn exn:fail? (lambda () (parser "+(1, 2")))
               (check-exn exn:fail? (lambda () (parser "case 1 otherwise => 0 end"))))
 
-   ;; ---------- errores de la base que la bateria original no cubre ----------
+   ;;errores de la base que la bateria original no cubre
    (test-case "primitivas: tipo, cantidad y division por cero"
               (check-exn exn:fail? (lambda () (corre "+(1, true)")))
               (check-exn exn:fail? (lambda () (corre "not(1)")))
@@ -643,7 +638,7 @@ in case dia of 1 => 100 of 3 => 300 otherwise => 0 end end") 0))
    (test-case "let evalua las expresiones en el ambiente externo"
               (check-equal? (corre "let n = 1 m = n in m end") 10))))
 
-;; Las suites que agregue el grupo se declaran arriba y se suman aquí.
+;; las suites que agregue el grupo se declaran arriba y se suman aqui
 
 (define fallidas
   (+ (run-tests base)

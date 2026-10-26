@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Santiago Serrano Morales 247706, Laura Sofía Echeverry González 2477067, Nicolás Cardona García 2477349, Samuel Peña Jaramillo 2477399 
+;Autores: Santiago Serrano Morales 2477006, Laura Sofía Echeverry González 2477067, Nicolás Cardona García 2477349, Samuel Peña Jaramillo 2477399 
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; Batería de pruebas con rackunit. Llega escrita en el fork y no se
@@ -16,6 +16,7 @@
 (require "interprete-cauca.rkt")
 
 ;; corre : string -> valor
+;; proposito analiza y evalua un programa en cauca dado como cadena de texto
 (define corre (lambda (texto) (interpretar texto)))
 
 (define base
@@ -545,6 +546,7 @@ in case dia of 1 => 100 of 3 => 300 otherwise => 0 end end") 0))
 
 ;; scanner-parser-grupo
 ;; tokens-de-clase : string x symbol -> lista
+;; proposito extrae los lexemas de los tokens que pertenecen a una clase lexica dada
 
 (define tokens-de-clase
   (lambda (texto clase)

@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Santiago Serrano Morales 247706, Laura Sofía Echeverry González 2477067, Nicolás Cardona García 2477349, Samuel Peña Jaramillo 2477399 
+;Autores: Santiago Serrano Morales 2477006, Laura Sofía Echeverry González 2477067, Nicolás Cardona García 2477349, Samuel Peña Jaramillo 2477399 
 
 
 ;; Taller 2 — El intérprete de Cauca.

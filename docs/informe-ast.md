@@ -229,7 +229,7 @@ $$\textit{value-of}\;(B_a)\ \rho_3$$
 
 | Subexpresión | Ambiente | Resultado |
 |---|---|---|
-| `>(i, m)` | $\rho_3$ | $\texttt{>}(1, 3) = \texttt{\#f}$ |
+| `>(i, m)` | $\rho_3$ | $>(1,3) = \text{false}$ |
 | `add1(i)` | $\rho_3$ | $2$ |
 | `desplazar` (operador) | $\rho_3$ | $C_d$ |
 | `total`, `i` | $\rho_3$ | $2,\ 1$ |
@@ -244,7 +244,7 @@ $$\rho_4 = [\,i = 2,\ total = 3\,] \cdot \rho_2$$
 
 | Subexpresión | Ambiente | Resultado |
 |---|---|---|
-| `>(i, m)` | $\rho_4$ | $\texttt{>}(2, 3) = \texttt{\#f}$ |
+| `>(i, m)` | $\rho_4$ | $>(2, 3) = \text{false}$ |
 | `add1(i)` | $\rho_4$ | $3$ |
 | `apply desplazar (total, i)` | $\rho_4$ | cuerpo en $[\,x = 3,\ d = 2\,] \cdot \rho_0$ $\Rightarrow 5$ |
 | `apply acumular (3, 5)` | $\rho_4$ | se invoca $C_a$ con $(3, 5)$ |
@@ -255,7 +255,7 @@ $$\rho_5 = [\,i = 3,\ total = 5\,] \cdot \rho_2$$
 
 | Subexpresión | Ambiente | Resultado |
 |---|---|---|
-| `>(i, m)` | $\rho_5$ | $\texttt{>}(3, 3) = \texttt{\#f}$ |
+| `>(i, m)` | $\rho_5$ | $>(3, 3) = \text{false}$ |
 | `add1(i)` | $\rho_5$ | $4$ |
 | `apply desplazar (total, i)` | $\rho_5$ | cuerpo en $[\,x = 5,\ d = 3\,] \cdot \rho_0$ $\Rightarrow 8$ |
 | `apply acumular (4, 8)` | $\rho_5$ | se invoca $C_a$ con $(4, 8)$ |
@@ -266,7 +266,7 @@ $$\rho_6 = [\,i = 4,\ total = 8\,] \cdot \rho_2$$
 
 | Subexpresión | Ambiente | Resultado |
 |---|---|---|
-| `>(i, m)` | $\rho_6$ | $\texttt{>}(4, 3) = \texttt{\#t}$ |
+| `>(i, m)` | $\rho_6$ | $>(4, 3) = \text{true}$ |
 | `total` (rama `then`) | $\rho_6$ | $8$ |
 
 ### Resultado

@@ -52,24 +52,30 @@
       (buscar ids 0))))
 
 ;; apply-env : ambiente x symbol -> valor
-;; Busca el identificador en el ambiente, respetando el shadowing de las
-;; ligaduras más recientes, y levanta eopl:error si no está ligado.
+;; Proposito: Busca el identificador en el ambiente, respetando el shadowing de las
+;; ligaduras mas recientes, y levanta eopl:error si no esta ligado.
 (define apply-env
   (lambda (env id)
     (cases ambiente env
       (ambiente-vacio ()
-        (eopl:error 'apply-env "Variable no ligada: ~s" id))
+        (eopl:error 'apply-env
+                    "Variable no ligada: ~s"
+                    id))
+
       (ambiente-extendido (ids valores env-padre)
         (let ((pos (posicion-de id ids)))
           (if (number? pos)
               (list-ref valores pos)
               (apply-env env-padre id))))
-      (ambiente-recursivo (proc-names idss bodies env-padre) ;; Datatype ambiente (Parte 4: variante ambiente-recursivo)
+
+      (ambiente-recursivo (proc-names idss bodies env-padre)
         (let ((pos (posicion-de id proc-names)))
-          (if pos
+          (if (number? pos)
               (cerradura (list-ref idss pos)
-                         (list-ref bodies pos) env)
+                         (list-ref bodies pos)
+                         env)
               (apply-env env-padre id)))))))
+
 
 ;; ambiente-inicial : -> ambiente
 ;; El ambiente con que arranca todo programa:

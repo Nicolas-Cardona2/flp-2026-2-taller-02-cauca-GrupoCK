@@ -1,5 +1,5 @@
 #lang eopl
-;Autores: Nicolás Cardona García 2477349, Laura Sofía Echeverry González 2477067, Santiago Serrano Morales 2577006
+;Autores: Nicolás Cardona García 2477349, Laura Sofía Echeverry González 2477067, Santiago Serrano Morales 2477006
 
 ;; Taller 2 — El intérprete de Cauca.
 ;; Especificación léxica, especificación gramatical, scanner y parser.

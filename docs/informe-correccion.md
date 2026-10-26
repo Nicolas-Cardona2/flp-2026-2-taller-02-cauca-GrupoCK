@@ -15,155 +15,107 @@
 
 ## 1. Marco formal
 
+En esta sección se presentan los principios formales utilizados para analizar la corrección de las funciones del intérprete de Cauca. Se consideran las condiciones iniciales, las propiedades que deben mantenerse durante la ejecución y las condiciones que permiten establecer que el resultado obtenido es correcto.
+
 ### 1.1. Corrección de programas recursivos
 
-Sea $f:A\rightarrow B$ una función y sea $P_f$ un programa que pretende calcularla. Decimos que $P_f$ es correcto respecto a su especificación cuando, para toda entrada válida, termina y produce el resultado definido por $f$:
+La corrección de un programa recursivo se puede justificar mediante el principio de inducción. Para ello, se identifica un caso base que debe producir un resultado correcto y se demuestra que, si las llamadas recursivas realizadas sobre casos más pequeños son correctas, entonces la función también produce un resultado correcto para el caso actual.
 
-$$
-\forall a\in A,\qquad P_f(a)=f(a)
-$$
+El razonamiento se estructura de la siguiente manera:
 
-La corrección se demuestra mediante inducción sobre la estructura de los datos o sobre una medida natural que disminuya en cada llamada recursiva.
+1. **Caso base:** se verifica que la función resuelve correctamente el caso más sencillo, sin necesitar nuevas llamadas recursivas.
+2. **Hipótesis inductiva:** se supone que la función es correcta para los casos más pequeños que el caso analizado.
+3. **Paso inductivo:** se demuestra que, utilizando los resultados correctos de las llamadas recursivas, la función obtiene el resultado esperado para el caso actual.
 
-La demostración consta de dos partes:
+Además de la corrección funcional, se debe considerar la terminación. Para justificarla, se identifica una medida que disminuya en cada llamada recursiva y que no pueda disminuir indefinidamente. Cuando esta condición se cumple y los casos base terminan, se puede concluir que la recursión finaliza.
 
-- **Caso base:** se verifica que el programa produce el resultado especificado para la entrada mínima.
-- **Caso inductivo:** se supone que el programa es correcto para entradas menores y se demuestra que también lo es para la entrada actual.
-
-La demostración de corrección del resultado no implica automáticamente la terminación. Por ello, cuando una función es recursiva, también se debe identificar una medida que disminuya estrictamente en cada llamada y que esté acotada inferiormente.
+En el intérprete de Cauca, este razonamiento permite analizar funciones que recorren estructuras, buscan identificadores en ambientes o procesan expresiones mediante llamadas recursivas.
 
 ### 1.2. Corrección de programas iterativos
 
-Para un procedimiento iterativo se pueden definir un estado $s$, un estado inicial $s_0$, una condición de terminación y una invariante $\mathrm{Inv}(s)$.
+La corrección de un programa iterativo puede demostrarse mediante un invariante de ciclo. Un invariante es una propiedad que se mantiene verdadera durante las iteraciones y que permite relacionar el estado del programa con el resultado esperado.
 
-La corrección se argumenta demostrando:
+La demostración se organiza en tres etapas:
 
-1. **Inicialización:** la invariante se cumple en el estado inicial.
-2. **Mantenimiento:** si la invariante se cumple antes de un paso, continúa cumpliéndose después.
-3. **Corrección final:** cuando termina el procedimiento, la invariante permite concluir que el resultado satisface la especificación.
-4. **Terminación:** existe una medida natural que disminuye estrictamente en cada paso y no puede decrecer indefinidamente.
+1. **Inicialización:** se comprueba que el invariante es verdadero antes de comenzar las iteraciones.
+2. **Mantenimiento:** se demuestra que, si el invariante es verdadero al inicio de una iteración, continúa siendo verdadero después de ejecutar el cuerpo del ciclo.
+3. **Terminación:** cuando el ciclo finaliza, se utiliza el invariante junto con la condición de salida para demostrar que el resultado obtenido satisface la especificación.
 
-En este informe se analizan tres componentes del intérprete de Cauca:
+También se debe justificar que el ciclo termina. Para ello, puede utilizarse una variable o medida que avance hacia una condición de salida y que no permanezca indefinidamente en un estado que permita continuar iterando.
 
-- `apply-procedure`, responsable de aplicar procedimientos representados mediante clausuras.
-- `letrec` y `apply-env`, responsables de representar y resolver ligaduras recursivas.
-- `case-exp` y `seleccionar-caso`, responsables de seleccionar y evaluar una alternativa.
+Aunque el análisis principal del intérprete de Cauca se centra en funciones recursivas, los principios de invariantes permiten razonar sobre cualquier procedimiento iterativo que forme parte de la implementación.
 
----
+### 1.3. Alcance del análisis
 
-## 2. Notación y reglas de evaluación
+El análisis de corrección se centra en las funciones del intérprete de Cauca que intervienen en la aplicación de procedimientos, la gestión de ambientes y la evaluación de expresiones de selección.
 
-Para las demostraciones se utiliza la siguiente notación:
+En particular, se consideran los siguientes componentes:
 
-- $\rho$: ambiente de evaluación.
-- $\varnothing$: ambiente vacío.
-- $\mathrm{ext}(X,V,\rho)$: ambiente extendido con identificadores $X$, valores $V$ y ambiente padre $\rho$.
-- $\mathrm{rec}(F,\bar X,\bar B,\rho)$: ambiente recursivo con nombres de procedimientos $F$, listas de parámetros $\bar X$, cuerpos $\bar B$ y ambiente exterior $\rho$.
-- $\langle X,B,\rho\rangle$: clausura con parámetros $X$, cuerpo $B$ y ambiente capturado $\rho$.
-- $\mathrm{value{-}of}(e,\rho)$: resultado de evaluar la expresión $e$ en el ambiente $\rho$.
-- $\mathrm{error}$: resultado de una evaluación que levanta un error explícito mediante `eopl:error`.
+- **`apply-procedure`:** analiza la aplicación de procedimientos y la correspondencia entre los parámetros formales y los argumentos recibidos.
+- **`letrec` y `apply-env`:** analiza la construcción de ambientes recursivos y la búsqueda de identificadores dentro de ellos.
+- **`case-exp`:** analiza la evaluación de expresiones de selección y la ejecución de la alternativa correspondiente.
 
-### 2.1. Búsqueda de identificadores
+Para cada función se debe establecer una especificación, identificar las condiciones necesarias para su funcionamiento y justificar que su implementación cumple el comportamiento esperado.
 
-La búsqueda de un identificador depende de la variante del ambiente.
-
-En el ambiente vacío, una variable no está ligada:
-
-$$
-\mathrm{buscar}(\varnothing,y)=\mathrm{error}
-$$
-
-En un ambiente extendido, si $y$ se encuentra entre los identificadores ligados, se retorna el valor correspondiente. En caso contrario, la búsqueda continúa en el ambiente padre:
-
-$$
-\mathrm{buscar}(\mathrm{ext}(X,V,\rho),y)= \begin{cases} v_i & \text{si } i=\min\{j:x_j=y\}\\ \mathrm{buscar}(\rho,y) & \text{si } y\notin X \end{cases}
-$$
-
-En un ambiente recursivo, si el identificador corresponde a un procedimiento declarado, se construye una clausura cuyo ambiente capturado es el propio ambiente recursivo:
-
-$$
-\mathrm{buscar}(\mathrm{rec}(F,\bar X,\bar B,\rho),y)= \begin{cases} \langle X_i,B_i,\rho_r\rangle & \text{si } i=\min\{j:f_j=y\}\\ \mathrm{buscar}(\rho,y) & \text{si } y\notin F \end{cases}
-$$
-
-donde:
-
-$$
-\rho_r=\mathrm{rec}(F,\bar X,\bar B,\rho)
-$$
-
-Esta última regla es fundamental para la corrección de `letrec`: la clausura conserva el ambiente que contiene las declaraciones recursivas.
-
-### 2.2. Evaluación de procedimientos y expresiones recursivas
-
-La evaluación de una expresión `proc` construye una clausura sin evaluar su cuerpo:
-
-$$
-\mathrm{value{-}of}(\mathrm{proc{-}exp}(X,B),\rho) = \langle X,B,\rho\rangle
-$$
-
-La aplicación evalúa el operador y los argumentos, y posteriormente invoca el procedimiento:
-
-$$
-\mathrm{value{-}of} (\mathrm{app{-}exp}(r,(e_1,\ldots,e_m)),\rho) = \mathrm{apply{-}procedure}(v_f,(v_1,\ldots,v_m))
-$$
-
-donde:
-
-$$
-v_f=\mathrm{value{-}of}(r,\rho)
-$$
-
-y:
-
-$$
-v_i=\mathrm{value{-}of}(e_i,\rho)
-$$
-
-La evaluación de `letrec` crea primero el ambiente recursivo y después evalúa su cuerpo:
-
-$$
-\mathrm{value{-}of} (\mathrm{letrec{-}exp}(F,\bar X,\bar B,B_0),\rho) = \mathrm{value{-}of}(B_0,\rho_r)
-$$
-
-con:
-
-$$
-\rho_r=\mathrm{rec}(F,\bar X,\bar B,\rho)
-$$
-
-Las demostraciones siguientes distinguen entre la corrección de las funciones analizadas y la terminación de las expresiones que estas evalúan. Una función del intérprete puede implementar correctamente su regla de evaluación, aunque el cuerpo de un programa del usuario no termine.
+La terminación se analiza de acuerdo con el comportamiento de cada función. Es importante distinguir entre la terminación de una operación específica del intérprete y la terminación de cualquier programa interpretado: un programa escrito en Cauca puede contener una recursión que no termine, por lo que no se debe asumir que todas las evaluaciones finalizan.
 
 ---
 
-## 3. Corrección de `apply-procedure`
+## 2. Funciones analizadas
 
-### 3.1. Especificación formal
+En esta sección se analiza la corrección de tres componentes del intérprete de Cauca: la aplicación de procedimientos mediante `apply-procedure`, la definición y búsqueda de procedimientos recursivos mediante `letrec-exp` y `apply-env`, y la selección de alternativas mediante `case-exp` y `seleccionar-caso`.
 
-La función `apply-procedure` recibe una clausura y una lista de valores correspondientes a los argumentos de una aplicación.
+Las demostraciones se basan en las implementaciones del intérprete compartidas por el grupo. Para cada componente se presenta su especificación, el código correspondiente, la demostración de corrección y el argumento de terminación.
 
-Su especificación es:
+### 2.1. Corrección de `apply-procedure`
 
-- **Tipo:** `apply-procedure` : `procval × lista de valores → valor`.
-- **Precondición:** el procedimiento es una clausura $\langle X,B,\rho_c\rangle$, donde $X$ es la lista de parámetros, $B$ es el cuerpo y $\rho_c$ es el ambiente capturado cuando se definió el procedimiento. La lista de argumentos contiene valores ya evaluados.
-- **Postcondición:** si la cantidad de argumentos coincide con la cantidad de parámetros, el cuerpo se evalúa en el ambiente capturado extendido con las ligaduras de los parámetros. Si las cantidades no coinciden, se levanta un error.
+#### Especificación formal
 
-Formalmente, sean $n=|X|$ y $m=|\bar v|$:
+La función `apply-procedure` es responsable de aplicar una clausura, asociando los argumentos recibidos con los parámetros formales y evaluando el cuerpo del procedimiento en el ambiente de definición extendido con dichas ligaduras.
 
-$$
-\mathrm{Post}(p,\bar v,r)\equiv \begin{cases} r=\mathrm{value{-}of} (B,\mathrm{ext}(X,\bar v,\rho_c)) & \text{si }m=n\\ r=\mathrm{error} & \text{si }m\neq n \end{cases}
-$$
+Su comportamiento debe satisfacer las siguientes propiedades:
 
-La especificación presupone que la expresión del cuerpo puede evaluarse. Si el cuerpo levanta un error propio, dicho error se propaga.
+1. La cantidad de argumentos debe coincidir con la cantidad de parámetros formales.
+2. El cuerpo debe evaluarse en el ambiente de definición de la clausura, extendido con los parámetros y sus respectivos argumentos.
+3. Si la cantidad de argumentos no coincide con la cantidad de parámetros, la aplicación debe generar un error.
+4. Si el operador de una aplicación no es un procedimiento, también debe generarse un error.
 
-### 3.2. Implementación analizada
+**Especificación:**
 
-La implementación de referencia es:
+- **Tipo:** `apply-procedure : procval × lista de valores → valor`.
+- **Precondición:** `proc` debe ser una clausura válida que contenga una lista de parámetros formales, un cuerpo y un ambiente de definición. Los elementos de `args` deben ser valores previamente evaluados.
+- **Postcondición:** si la cantidad de argumentos coincide con la cantidad de parámetros, se evalúa el cuerpo en el ambiente de definición extendido con las ligaduras de los parámetros. Si las cantidades son diferentes, se genera un error de aridad.
 
-```scheme
-; apply-procedure : procval x lista de valores -> valor
-; Verifica la cantidad de argumentos y evalúa el cuerpo de la clausura
-; en el ambiente capturado, extendido con las ligaduras de los parámetros.
+Sean:
 
+- $X=(x_1,\ldots,x_n)$ la lista de parámetros formales.
+- $\bar{v}=(v_1,\ldots,v_m)$ la lista de argumentos.
+- $B$ el cuerpo del procedimiento.
+- $\rho_d$ el ambiente de definición de la clausura.
+- $\rho_b$ el ambiente en el que se evalúa el cuerpo.
+- $r$ el resultado de la evaluación.
+
+La postcondición se expresa formalmente como:
+
+$$\mathrm{Post}(X,\bar{v},B,\rho_d,r)\equiv
+\begin{cases}
+r=\mathrm{value\text{-}of}(B,\mathrm{ext}(X,\bar{v},\rho_d)), & \text{si } |X|=|\bar{v}|,\\
+r=\mathrm{error}, & \text{si } |X|\ne|\bar{v}|.
+\end{cases}$$
+
+La notación $\mathrm{ext}(X,\bar{v},\rho_d)$ representa el ambiente que asocia cada parámetro con su argumento y conserva como ambiente padre el ambiente de definición.
+
+Por tanto, la condición fundamental de corrección es:
+
+$$\rho_b=\mathrm{ext}(X,\bar{v},\rho_d)$$
+
+Esta condición establece que el ambiente de definición, y no el ambiente de llamada, debe ser el ambiente padre de las ligaduras de los parámetros.
+
+#### Implementación analizada
+
+La función implementada en el intérprete es:
+
+```racket
 (define apply-procedure
   (lambda (proc args)
     (cases procval proc
@@ -179,25 +131,250 @@ La implementación de referencia es:
              (length args)))))))
 ```
 
-La función distingue dos situaciones:
+La implementación descompone la clausura y obtiene sus parámetros, su cuerpo y su ambiente de definición. Después compara la cantidad de parámetros con la cantidad de argumentos.
 
-1. La cantidad de parámetros coincide con la cantidad de argumentos.
-2. La cantidad de parámetros es diferente de la cantidad de argumentos.
+Si las cantidades coinciden, construye un ambiente extendido utilizando `env-definicion` como ambiente padre y evalúa el cuerpo en ese ambiente. Si las cantidades son diferentes, genera un error y no evalúa el cuerpo.
 
-En el primer caso, se extiende el ambiente capturado y se evalúa el cuerpo. En el segundo, se genera un error mediante `eopl:error`.
+La instrucción fundamental es:
 
-### 3.3. Construcción de la clausura y aplicación
+```racket
+(ambiente-extendido ids args env-definicion)
+```
 
-La evaluación de `proc-exp` crea la clausura:
+El tercer argumento determina el ambiente padre de las nuevas ligaduras. Como se utiliza `env-definicion`, las variables libres del procedimiento se resuelven conforme al ambiente en el que fue definido.
 
-```scheme
+#### Demostración de corrección respecto a la cantidad de argumentos
+
+La demostración se realiza mediante un análisis de casos sobre la condición:
+
+$$|X|=|\bar{v}|$$
+
+**Caso 1: la cantidad de parámetros coincide con la cantidad de argumentos.**
+
+Supongamos que:
+
+$$|X|=|\bar{v}|$$
+
+La condición del `if` es verdadera y se ejecuta:
+
+```racket
+(evaluar-expresion
+ body
+ (ambiente-extendido ids args env-definicion))
+```
+
+Por la construcción de `ambiente-extendido`, el ambiente utilizado para evaluar el cuerpo es:
+
+$$\rho_b=\mathrm{ext}(X,\bar{v},\rho_d)$$
+
+En consecuencia, el resultado de la aplicación es:
+
+$$r=\mathrm{value\text{-}of}(B,\rho_b)$$
+
+Sustituyendo la definición de $\rho_b$:
+
+$$r=\mathrm{value\text{-}of}\left(B,\mathrm{ext}(X,\bar{v},\rho_d)\right)$$
+
+Por tanto, se satisface la primera alternativa de la postcondición.
+
+**Caso 2: la cantidad de parámetros es diferente de la cantidad de argumentos.**
+
+Supongamos que:
+
+$$|X|\neq|\bar{v}|$$
+
+La condición del `if` es falsa y se ejecuta:
+
+```racket
+(eopl:error
+ 'apply-procedure
+ "se esperaban ~s argumento(s) y llegaron ~s"
+ (length ids)
+ (length args))
+```
+
+La función genera un error explícito que informa cuántos argumentos se esperaban y cuántos se recibieron. El cuerpo del procedimiento no llega a evaluarse.
+
+Por tanto, se satisface la segunda alternativa de la postcondición.
+
+Ambos casos son mutuamente excluyentes y cubren todas las posibilidades de comparación entre las longitudes de las listas. En consecuencia, `apply-procedure` cumple la especificación respecto a la cantidad de argumentos.
+
+#### Demostración del alcance léxico
+
+El alcance léxico establece que las variables libres de un procedimiento se resuelven utilizando las ligaduras disponibles en el ambiente en el que fue definido el procedimiento, no las ligaduras locales del lugar desde el cual se invoca.
+
+Para demostrar esta propiedad, se consideran dos lemas y un teorema.
+
+**Lema 1. La clausura conserva el ambiente de definición.**
+
+Cuando una expresión `proc-exp` se evalúa en un ambiente $\rho$, la implementación construye la clausura mediante:
+
+```racket
 (proc-exp (ids body)
   (cerradura ids body env))
 ```
 
-La aplicación verifica primero que el operador sea un procedimiento:
+Por tanto, si $X$ representa los parámetros y $B$ el cuerpo, la clausura resultante es:
 
-```scheme
+$$c=\langle X,B,\rho\rangle$$
+
+El tercer componente de la clausura es el ambiente en el que se evaluó la expresión `proc-exp`. El cuerpo todavía no se ejecuta.
+
+Así, la clausura conserva el ambiente de definición. $\square$
+
+**Lema 2. `apply-procedure` utiliza el ambiente capturado.**
+
+La función `apply-procedure` recibe el procedimiento y los valores de sus argumentos. Al descomponer la clausura, obtiene el ambiente de definición en la variable `env-definicion`.
+
+Cuando construye el ambiente del cuerpo, utiliza:
+
+```racket
+(ambiente-extendido ids args env-definicion)
+```
+
+Por tanto, el ambiente padre de las ligaduras de los parámetros es el ambiente capturado por la clausura. La función no utiliza el ambiente de llamada para construir dicho ambiente.
+
+Así, el cuerpo se evalúa extendiendo el ambiente de definición. $\square$
+
+**Teorema. El cuerpo de un procedimiento se evalúa en su ambiente de definición.**
+
+Sea:
+
+$$c=\langle X,B,\rho_d\rangle$$
+
+una clausura aplicada desde un ambiente de llamada $\rho_{\mathrm{llamada}}$, con la cantidad correcta de argumentos $\bar{v}$.
+
+Por los lemas anteriores, `apply-procedure` evalúa el cuerpo en:
+
+$$\rho_b=\mathrm{ext}(X,\bar{v},\rho_d)$$
+
+y no en:
+
+$$\rho_b'=\mathrm{ext}(X,\bar{v},\rho_{\mathrm{llamada}})$$
+
+Los argumentos se evalúan previamente en el ambiente de llamada, según la implementación de `app-exp`. Sin embargo, una vez obtenidos sus valores, estos se asocian con los parámetros utilizando el ambiente de definición como ambiente padre.
+
+En consecuencia, la implementación cumple el comportamiento esperado del alcance léxico. $\square$
+
+#### Ejemplo de contraste: resultados 50 y 5000
+
+Considérese el siguiente programa de la Parte 3 del taller:
+
+```text
+let factor = 10
+in
+  let escalar = proc (v) *(v, factor) end
+  in
+    let factor = 1000
+    in
+      apply escalar (5)
+    end
+  end
+end
+```
+
+El programa define `escalar` cuando `factor` vale $10$. Posteriormente, crea una nueva ligadura de `factor` con valor $1000$ y aplica `escalar` con argumento $5$.
+
+Para analizar la evaluación, se definen los siguientes ambientes:
+
+$$\rho_0=\text{ambiente inicial}$$
+
+$$\rho_1=\mathrm{ext}((factor),(10),\rho_0)$$
+
+La clausura de `escalar` se construye en $\rho_1$:
+
+$$c=\langle(v),*(v,factor),\rho_1\rangle$$
+
+Después se crea la ligadura de `escalar`:
+
+$$\rho_2=\mathrm{ext}((escalar),(c),\rho_1)$$
+
+La nueva declaración de `factor` produce:
+
+$$\rho_3=\mathrm{ext}((factor),(1000),\rho_2)$$
+
+La aplicación `apply escalar (5)` ocurre en $\rho_3$. En ese ambiente, `escalar` se encuentra mediante la búsqueda en los ambientes padres y el argumento se evalúa con el valor $5$.
+
+**Evaluación correcta: ambiente de definición.**
+
+La implementación de `apply-procedure` utiliza $\rho_1$, el ambiente capturado por la clausura, como ambiente padre del parámetro `v`.
+
+Por tanto, el ambiente del cuerpo es:
+
+$$\rho_4=\mathrm{ext}((v),(5),\rho_1)$$
+
+Al buscar `factor`, el intérprete no lo encuentra en $\rho_4$, por lo que continúa en $\rho_1$. Allí encuentra la ligadura original:
+
+$$factor=10$$
+
+La evaluación del cuerpo es:
+
+$$*(v,factor)=5\cdot10=50$$
+
+El resultado correcto es:
+
+$$\boxed{50}$$
+
+La cadena de ambientes correspondiente es:
+
+```mermaid
+flowchart TD
+    A["ρ₄: v = 5"] --> B["ρ₁: factor = 10"]
+    B --> C["ρ₀: ambiente inicial"]
+    C --> D["ambiente-vacío"]
+```
+
+En esta cadena, $\rho_4$ contiene el parámetro y apunta al ambiente de definición $\rho_1$. La búsqueda de `factor` encuentra el valor $10$ en dicho ambiente.
+
+**Evaluación incorrecta: ambiente de llamada.**
+
+Si se utilizara incorrectamente el ambiente de llamada como ambiente padre, se construiría:
+
+$$\rho_4'=\mathrm{ext}((v),(5),\rho_3)$$
+
+Al buscar `factor`, el intérprete encontraría primero la ligadura más reciente:
+
+$$factor=1000$$
+
+En consecuencia, la evaluación sería:
+
+$$*(v,factor)=5\cdot1000=5000$$
+
+El resultado sería:
+
+$$\boxed{5000}$$
+
+La cadena de ambientes correspondiente a esta evaluación incorrecta es:
+
+```mermaid
+flowchart TD
+    A["ρ₄': v = 5"] --> B["ρ₃: factor = 1000"]
+    B --> C["ρ₂: escalar = c"]
+    C --> D["ρ₁: factor = 10"]
+    D --> E["ρ₀: ambiente inicial"]
+    E --> F["ambiente-vacío"]
+```
+
+En esta cadena, la búsqueda de `factor` encuentra el valor $1000$ en $\rho_3$ antes de llegar a $\rho_1$.
+
+La comparación de ambos resultados es:
+
+| Estrategia | Ambiente padre del cuerpo | Valor de `factor` | Resultado |
+|---|---|---:|---:|
+| Alcance léxico, implementado | $\rho_1$ | 10 | 50 |
+| Ambiente de llamada, incorrecto | $\rho_3$ | 1000 | 5000 |
+
+Este ejemplo demuestra que el ambiente padre utilizado al aplicar una clausura modifica el resultado cuando existen ligaduras con el mismo identificador en diferentes niveles.
+
+La implementación es correcta porque conserva el ambiente de definición y produce $50$, tal como exige el alcance léxico de Cauca.
+
+#### Corrección del tratamiento de errores
+
+La aplicación de procedimientos involucra dos verificaciones: comprobar que el operador sea un procedimiento y comprobar que la cantidad de argumentos coincida con la cantidad de parámetros.
+
+La primera verificación se encuentra en la variante `app-exp` de `evaluar-expresion`:
+
+```racket
 (app-exp (rator rands)
   (let ((proc (evaluar-expresion rator env)))
     (if (procval? proc)
@@ -206,786 +383,218 @@ La aplicación verifica primero que el operador sea un procedimiento:
         (eopl:error
          'app-exp
          "el operador no es un procedimiento: ~s"
-         proc))))
+         proc)))
 ```
 
-Por tanto, existen dos comprobaciones distintas:
+La implementación evalúa primero el operador y verifica su tipo mediante `procval?`.
 
-- `app-exp` verifica que el operador evaluado sea un procedimiento.
-- `apply-procedure` verifica que el número de argumentos coincida con el número de parámetros.
+**Caso 1: el operador no es un procedimiento.**
 
-La evaluación de los argumentos se realiza en el ambiente de la aplicación. Sin embargo, la evaluación del cuerpo de la clausura se realiza en el ambiente de definición capturado por el procedimiento.
+Si el resultado de evaluar `rator` no satisface `procval?`, la condición es falsa y se ejecuta `eopl:error`. En este caso, la función no evalúa los argumentos ni invoca `apply-procedure`.
 
-### 3.4. Demostración de la postcondición
+Por tanto, la aplicación genera un error porque el operador no representa un procedimiento.
 
-Sea:
+**Caso 2: el operador es un procedimiento, pero la cantidad de argumentos es incorrecta.**
 
-$$
-p=\langle X,B,\rho_c\rangle
-$$
+Si el operador es una clausura, `app-exp` evalúa los argumentos y llama a `apply-procedure`. Si la cantidad de argumentos no coincide con la cantidad de parámetros, la condición del `if` dentro de `apply-procedure` es falsa y se genera el error de aridad demostrado en la sección 2.1.3.
 
-y sean:
+**Caso 3: el operador es un procedimiento y la cantidad de argumentos es correcta.**
 
-$$
-n=|X|,\qquad m=|\bar v|
-$$
+En este caso, `app-exp` invoca `apply-procedure`, que construye el ambiente del cuerpo y evalúa el procedimiento conforme a la especificación.
 
-La función compara $n$ y $m$.
+Los casos anteriores muestran que las dos verificaciones de la aplicación están implementadas en los lugares correspondientes:
 
-#### Caso 1: $m=n$
+| Condición | Función responsable | Comportamiento |
+|---|---|---|
+| El operador no es un procedimiento | `app-exp` | Genera un error de operador no procedimental. |
+| La cantidad de argumentos no coincide | `apply-procedure` | Genera un error de aridad. |
+| El operador es un procedimiento y la aridad coincide | `apply-procedure` | Evalúa el cuerpo en el ambiente de definición extendido. |
 
-Cuando las cantidades coinciden, se ejecuta la rama verdadera del `if`:
+Esta afirmación se refiere a los errores de validación propios de la aplicación. Durante la evaluación de los argumentos o del cuerpo también pueden producirse errores por otras causas.
 
-```scheme
-(evaluar-expresion
- body
- (ambiente-extendido ids args env-definicion))
-```
+Por tanto, la implementación verifica correctamente que el operador sea un procedimiento y que la cantidad de argumentos coincida con la cantidad de parámetros antes de completar la aplicación.
 
-La expresión del cuerpo se evalúa en el ambiente:
+#### Terminación
 
-$$
-\rho_b=\mathrm{ext}(X,\bar v,\rho_c)
-$$
+`apply-procedure` no contiene llamadas recursivas directas. Comprueba la longitud de las listas de parámetros y argumentos y, posteriormente, evalúa el cuerpo o genera un error.
 
-Por consiguiente:
+Sin embargo, cuando las cantidades coinciden, la terminación de la aplicación depende de la evaluación del cuerpo. Si este contiene llamadas recursivas que no terminan, tampoco puede garantizarse que la aplicación completa finalice.
 
-$$
-r=\mathrm{value{-}of}(B,\rho_b)
-$$
+Por tanto, puede garantizarse que `apply-procedure` realiza la comprobación de aridad y selecciona la operación correspondiente, pero no que cualquier procedimiento aplicado termine independientemente de su cuerpo.
 
-Esto satisface la primera alternativa de la postcondición.
+#### Conclusión
 
-#### Caso 2: $m\neq n$
+La implementación de `apply-procedure` cumple la especificación establecida para la aplicación de clausuras. Verifica que la cantidad de argumentos coincida con la cantidad de parámetros y evalúa el cuerpo en el ambiente de definición extendido con las ligaduras correspondientes.
 
-Cuando las cantidades no coinciden, se ejecuta la rama falsa:
+La combinación de `proc-exp`, `app-exp` y `apply-procedure` también garantiza que la aplicación valide el tipo del operador y la aridad. La demostración formal confirma que el ambiente capturado por la clausura se conserva durante la ejecución del procedimiento.
 
-```scheme
-(eopl:error
- 'apply-procedure
- "se esperaban ~s argumento(s) y llegaron ~s"
- (length ids)
- (length args))
-```
-
-La función no evalúa el cuerpo y levanta un error explícito. Se satisface la segunda alternativa de la postcondición.
-
-Ambos casos son mutuamente excluyentes y cubren todas las posibilidades para las longitudes de las listas. Por tanto, `apply-procedure` cumple su especificación respecto a la cantidad de argumentos y al ambiente de evaluación.
-
-$$
-\boxed{\texttt{apply-procedure cumple su postcondición}}
-$$
-
-### 3.5. Corrección del alcance léxico
-
-Para demostrar que el cuerpo utiliza el ambiente de definición y no el ambiente de llamada, se presentan dos lemas y un teorema.
-
-**Lema 1. La clausura captura el ambiente de definición.**
-
-Si una expresión `proc-exp` se evalúa en $\rho$, la clausura resultante es:
-
-$$
-c=\langle X,B,\rho\rangle
-$$
-
-**Demostración.**
-
-La regla de evaluación de `proc-exp` construye la clausura con el ambiente vigente:
-
-```scheme
-(proc-exp (ids body)
-  (cerradura ids body env))
-```
-
-Por tanto, el tercer componente de la clausura es el ambiente en el que se evaluó la expresión `proc-exp`. El cuerpo todavía no se ejecuta. $\square$
-
-**Lema 2. `apply-procedure` utiliza el ambiente capturado.**
-
-La función `apply-procedure` recibe únicamente el procedimiento y los valores de los argumentos. No recibe el ambiente de llamada como parámetro.
-
-Cuando descompone la clausura, obtiene `env-definicion` y lo utiliza como ambiente padre de `ambiente-extendido`:
-
-```scheme
-(ambiente-extendido ids args env-definicion)
-```
-
-Por tanto, el ambiente empleado para evaluar el cuerpo se construye a partir del ambiente capturado, no del ambiente en el que se invocó el procedimiento. $\square$
-
-**Teorema. El cuerpo de un procedimiento se evalúa en su ambiente de definición.**
-
-Sea $c=\langle X,B,\rho_c\rangle$ una clausura aplicada en el ambiente $\rho_{\text{llamada}}$, con la cantidad correcta de argumentos $\bar v$. Entonces, el cuerpo se evalúa en:
-
-$$
-\rho_b=\mathrm{ext}(X,\bar v,\rho_c)
-$$
-
-y no en:
-
-$$
-\mathrm{ext}(X,\bar v,\rho_{\text{llamada}})
-$$
-
-**Demostración.**
-
-Por el Lema 1, la clausura contiene el ambiente de definición $\rho_c$. Por el Lema 2, `apply-procedure` utiliza ese ambiente para construir el ambiente del cuerpo.
-
-Los argumentos sí se evalúan en el ambiente de llamada, conforme a la regla `app-exp`, pero sus valores se asocian posteriormente con los parámetros utilizando $\rho_c$ como ambiente padre.
-
-En consecuencia, la implementación cumple el alcance léxico. $\square$
-
-### 3.6. Ejemplo de contraste: resultado 50 frente a 5000
-
-Considérese el programa:
-
-```text
-let factor = 10
-in
-  let escalar = proc (v) *(v, factor) end
-  in
-    let factor = 1000
-    in apply escalar (5) end
-  end
-end
-```
-
-El programa define `escalar` cuando `factor` vale `10`. Posteriormente, establece otra ligadura de `factor` con valor `1000` y aplica `escalar` con argumento `5`.
-
-Definamos los ambientes:
-
-$$
-\rho_1=\mathrm{ext}((factor),(10),\rho_0)
-$$
-
-La clausura se crea en $\rho_1$:
-
-$$
-c=\langle(v),*(v,factor),\rho_1\rangle
-$$
-
-A continuación:
-
-$$
-\rho_2=\mathrm{ext}((escalar),(c),\rho_1)
-$$
-
-y la nueva ligadura de `factor` crea:
-
-$$
-\rho_3=\mathrm{ext}((factor),(1000),\rho_2)
-$$
-
-La aplicación ocurre en $\rho_3$.
-
-#### Evaluación correcta: ambiente de definición
-
-La función extiende el ambiente capturado:
-
-$$
-\rho_4=\mathrm{ext}((v),(5),\rho_1)
-$$
-
-Al buscar `factor`, el intérprete no lo encuentra en la ligadura de `v` y continúa en $\rho_1$, donde encuentra el valor `10`.
-
-Por tanto:
-
-$$
-5\cdot10=50
-$$
-
-#### Evaluación incorrecta: ambiente de llamada
-
-Si se utilizara el ambiente de llamada, se construiría:
-
-$$
-\rho_4'=\mathrm{ext}((v),(5),\rho_3)
-$$
-
-La búsqueda de `factor` encontraría primero la ligadura de valor `1000`:
-
-$$
-5\cdot1000=5000
-$$
-
-Por tanto, los resultados permiten distinguir los dos comportamientos:
-
-| Estrategia | Ambiente padre del cuerpo | Resultado |
-|---|---|---:|
-| Alcance léxico, implementado | $\rho_1$ | 50 |
-| Ambiente de llamada, incorrecto | $\rho_3$ | 5000 |
-
-El resultado correcto para la implementación descrita es `50`.
-
-#### Diagrama de ambientes para el resultado 50
-
-```mermaid
-graph TD
-  A4["ρ4: v = 5"] --> A1["ρ1: factor = 10"]
-  A1 --> A0["ρ0: ambiente inicial"]
-  A0 --> V["ambiente-vacio"]
-```
-
-#### Diagrama del comportamiento incorrecto que produciría 5000
-
-```mermaid
-graph TD
-  B4["ρ4': v = 5"] --> B3["ρ3: factor = 1000"]
-  B3 --> B2["ρ2: escalar = clausura"]
-  B2 --> B1["ρ1: factor = 10"]
-  B1 --> B0["ρ0: ambiente inicial"]
-  B0 --> V2["ambiente-vacio"]
-```
-
-Los diagramas muestran por qué el ambiente padre de la clausura determina qué ligadura encuentra la búsqueda de `factor`.
-
-### 3.7. Errores de aplicación
-
-Se consideran errores propios de la aplicación aquellos que `app-exp` y `apply-procedure` generan directamente.
-
-**Teorema.** Supóngase que la evaluación del operador y de los argumentos terminó sin error. Sea $v_f$ el valor del operador y sea $m$ la cantidad de argumentos. La aplicación genera un error propio si y solo si se cumple alguna de estas condiciones:
-
-$$
-\neg\mathrm{procval?}(v_f)
-$$
-
-o bien:
-
-$$
-v_f=\langle X,B,\rho_c\rangle \quad\land\quad |X|\neq m
-$$
-
-**Demostración.**
-
-- Si el operador no es un procedimiento, `app-exp` ejecuta su rama de error.
-- Si el operador es una clausura y la cantidad de argumentos no coincide con la cantidad de parámetros, `apply-procedure` ejecuta su rama de error.
-- Si el operador es una clausura y ambas cantidades coinciden, ninguna de estas dos condiciones de error se activa. Aun así, la evaluación del cuerpo puede producir un error diferente.
-
-Por tanto, las condiciones indicadas caracterizan los errores propios de la aplicación. $\square$
-
-**Orden de las verificaciones.**
-
-El operador se evalúa y se comprueba antes de evaluar los argumentos. Por ello, una aplicación como:
-
-```text
-apply 5 (variableinexistente)
-```
-
-debe generar primero el error que indica que `5` no es un procedimiento, siempre que la implementación conserve el orden mostrado.
-
-### 3.8. Terminación
-
-`apply-procedure` no realiza llamadas recursivas directas. Comprueba las longitudes, construye un ambiente y llama una vez a `evaluar-expresion` para evaluar el cuerpo.
-
-Por tanto, la función no tiene un ciclo recursivo propio. La terminación de la aplicación completa depende de que termine la evaluación del cuerpo y de las expresiones involucradas.
-
-**Conclusión de la sección:** `apply-procedure` satisface la especificación descrita: verifica la aridad, evalúa el cuerpo en el ambiente de definición y propaga los errores que se produzcan durante la evaluación del cuerpo.
+Finalmente, el ejemplo de contraste demuestra la importancia del alcance léxico: el programa produce $50$ cuando se utiliza correctamente el ambiente de definición, mientras que el uso incorrecto del ambiente de llamada produciría $5000$. Por tanto, la implementación analizada respeta el comportamiento esperado para la aplicación de procedimientos en Cauca.
 
 ---
 
-## 4. Corrección de `letrec` y `apply-env`
+### 2.2. Corrección de la ligadura recursiva (`letrec` y `apply-env`)
 
-### 4.1. Especificación formal
+#### Invariante del ambiente recursivo
 
-`letrec` permite declarar procedimientos que pueden referirse a sí mismos y a otros procedimientos declarados en el mismo bloque.
+La implementación de `letrec` debe garantizar que cada procedimiento declarado pueda acceder a su propio nombre y a los demás procedimientos definidos en el mismo bloque recursivo. Para ello, si el ambiente recursivo se representa como:
 
-La implementación crea un ambiente recursivo que contiene los nombres, los parámetros y los cuerpos de los procedimientos. La función `apply-env` utiliza esa información para construir clausuras cuando se buscan los identificadores correspondientes.
+$$\rho_r=\mathrm{rec}(F,\bar X,\bar B,\rho)$$
 
-La especificación es:
+donde $F$ contiene los nombres de los procedimientos, $\bar X$ sus parámetros, $\bar B$ sus cuerpos y $\rho$ el ambiente exterior, se establece el siguiente invariante:
 
-- **Tipo de `apply-env`:** `ambiente × symbol → valor`.
-- **Tipo de la evaluación de `letrec`:** `expresion × ambiente → valor`.
-- **Precondición:** los nombres de los procedimientos, las listas de parámetros y los cuerpos están correctamente asociados por posición. Los cuerpos se conservan sin evaluar al construir el ambiente recursivo.
-- **Postcondición:** el cuerpo del `letrec` se evalúa en el ambiente recursivo. Al buscar un nombre declarado, se obtiene la clausura correspondiente, que contiene sus parámetros, su cuerpo y el ambiente recursivo como ambiente capturado.
+$$\mathrm{buscar}(\rho_r,f_i)=\langle X_i,B_i,\rho_r\rangle$$
 
-Sean:
+Esto significa que cada procedimiento debe resolverse a una clausura que conserve sus parámetros, su cuerpo y el propio ambiente recursivo.
 
-$$
-F=(f_1,\ldots,f_k)
-$$
+#### Construcción de clausuras mediante `apply-env`
 
-$$
-\bar X=(X_1,\ldots,X_k)
-$$
+La implementación de `letrec-exp` crea el ambiente recursivo y evalúa en él la expresión que contiene:
 
-$$
-\bar B=(B_1,\ldots,B_k)
-$$
+    (let ((env-rec
+           (ambiente-recursivo proc-names idss bodies env)))
+      (evaluar-expresion body env-rec))
 
-y:
+Por su parte, cuando `apply-env` encuentra un procedimiento dentro de un `ambiente-recursivo`, construye la clausura de la siguiente manera:
 
-$$
-\rho_r=\mathrm{rec}(F,\bar X,\bar B,\rho)
-$$
-
-La propiedad principal que se desea demostrar es:
-
-$$
-\mathrm{buscar}(\rho_r,f_i) = \langle X_i,B_i,\rho_r\rangle
-$$
-
-para cada procedimiento que corresponda a la primera aparición de su nombre.
-
-### 4.2. Implementación analizada
-
-La siguiente implementación de referencia representa la búsqueda de un identificador:
-
-```scheme
-; apply-env : ambiente x symbol -> valor
-; Busca el identificador en el ambiente y sus padres.
-; En un ambiente recursivo, construye una clausura que captura
-; el propio ambiente recursivo.
-
-(define apply-env
-  (lambda (env id)
-    (cases ambiente env
-      (ambiente-vacio ()
-        (eopl:error
-         'apply-env
-         "Variable no ligada: ~s"
-         id))
-
-      (ambiente-extendido (ids valores env-padre)
-        (let ((pos (posicion-de id ids)))
-          (if (number? pos)
-              (list-ref valores pos)
-              (apply-env env-padre id))))
-
-      (ambiente-recursivo
-       (proc-names idss bodies env-padre)
-        (let ((pos (posicion-de id proc-names)))
-          (if pos
-              (cerradura
-               (list-ref idss pos)
+    (cerradura (list-ref idss pos)
                (list-ref bodies pos)
                env)
-              (apply-env env-padre id)))))))
-```
 
-La evaluación de `letrec` crea el ambiente recursivo y evalúa su cuerpo en ese ambiente:
+El último argumento es el propio ambiente recursivo consultado. Por tanto, la clausura conserva el entorno en el que están disponibles los procedimientos declarados.
 
-```scheme
-(letrec-exp (proc-names idss bodies body)
-  (let ((env-rec
-         (ambiente-recursivo
-          proc-names
-          idss
-          bodies
-          env)))
-    (evaluar-expresion body env-rec)))
-```
+**Demostración:** al buscar el nombre de un procedimiento, `apply-env` identifica su posición en la lista `proc-names`. Con esa posición obtiene sus parámetros y su cuerpo, y construye una clausura que captura el ambiente recursivo. Cuando se invoca el procedimiento, sus argumentos se asocian con los parámetros y el cuerpo se evalúa en un ambiente extendido cuyo padre es el ambiente recursivo. Así, las referencias al propio procedimiento y a los demás procedimientos del bloque pueden resolverse correctamente. Por tanto, se satisface el invariante establecido.
 
-#### Representación de procedimientos mediante clausuras
+#### Demostración del invariante del ambiente recursivo
 
-La implementación representa los procedimientos mediante el tipo de dato `procval`, cuya variante `cerradura` almacena tres componentes: la lista de parámetros (`ids`), el cuerpo del procedimiento (`body`) y el ambiente donde fue definido (`env`). El cuerpo se conserva sin evaluar hasta que el procedimiento es invocado.
+Sea el ambiente recursivo:
 
-Esta representación permite implementar el alcance léxico. En `apply-procedure`, los argumentos se asocian con los parámetros mediante `ambiente-extendido`, utilizando como ambiente padre el ambiente capturado por la clausura. De esta manera, el cuerpo se evalúa en el entorno donde se definió el procedimiento, extendido con los valores de sus argumentos, y no en el entorno desde el cual se realizó la llamada.
+$$\rho_r=\mathrm{rec}(F,\bar X,\bar B,\rho)$$
 
-En el caso de `letrec`, `apply-env` construye la clausura de un procedimiento declarado recursivamente utilizando el ambiente recursivo como ambiente capturado. Esto es fundamental para que, durante la evaluación del cuerpo del procedimiento, sus propias referencias y las de los demás procedimientos declarados en el mismo `letrec` puedan resolverse correctamente.
+donde $F=(f_1,\ldots,f_n)$ representa los nombres de los procedimientos, $\bar X=(X_1,\ldots,X_n)$ sus listas de parámetros, $\bar B=(B_1,\ldots,B_n)$ sus cuerpos y $\rho$ el ambiente exterior.
 
-En el caso de `ambiente-recursivo`, el argumento `env` de `apply-env` es el ambiente recursivo que se está consultando. La clausura debe capturar ese ambiente, no únicamente `env-padre`.
+El invariante que se desea demostrar establece que, para cada procedimiento $f_i$ declarado en el ambiente recursivo, su búsqueda debe producir una clausura que contenga sus parámetros, su cuerpo y el propio ambiente recursivo:
 
-**Nota sobre la condición `if`.** En Racket, el valor `0` se considera verdadero. Por ello, si `posicion-de` devuelve un índice numérico y usa `0` para la primera posición, la condición `(if pos ...)` también entra en la rama verdadera para ese índice. No obstante, esta conclusión depende de que `posicion-de` represente la ausencia de una coincidencia con un valor falso, por ejemplo `#f`.
+$$\mathrm{apply\text{-}env}(\rho_r,f_i)=\mathrm{cerradura}(X_i,B_i,\rho_r)$$
 
-### 4.3. Invariante del ambiente recursivo
+**Demostración:**
 
-Sea:
+1. **Búsqueda del procedimiento:** cuando `apply-env` recibe el ambiente $\rho_r$ y el identificador $f_i$, identifica la posición $i$ del procedimiento en la lista de nombres $F$. Si el procedimiento existe en dicha lista, no continúa buscando en el ambiente exterior.
 
-$$
-\rho_r=\mathrm{rec}(F,\bar X,\bar B,\rho)
-$$
+2. **Obtención de los componentes:** mediante la posición encontrada, la implementación recupera la lista de parámetros $X_i$ y el cuerpo $B_i$ del procedimiento utilizando `list-ref`.
 
-el ambiente recursivo creado por `letrec`.
+3. **Construcción de la clausura:** la implementación ejecuta:
 
-Para cada procedimiento $f_i$, su clausura correcta debe conservar:
+   ```racket
+   (cerradura (list-ref idss pos)
+              (list-ref bodies pos)
+              env)
+   ```
 
-$$
-c_i=\langle X_i,B_i,\rho_r\rangle
-$$
+   En esta expresión, `env` corresponde al ambiente recursivo que se está consultando. Por tanto, la clausura resultante conserva los parámetros y el cuerpo del procedimiento, además de capturar el propio ambiente recursivo.
 
-Cuando se aplica el procedimiento con valores de argumentos $\bar v$, el cuerpo se evalúa en:
+4. **Verificación del invariante:** al invocarse la clausura, los argumentos recibidos se asocian con sus parámetros y el cuerpo se evalúa en un ambiente extendido cuyo ambiente padre es el ambiente capturado. Como este ambiente padre es $\rho_r$, las referencias al propio procedimiento y a los demás procedimientos declarados en el mismo bloque pueden resolverse mediante `apply-env`.
 
-$$
-\rho_b=\mathrm{ext}(X_i,\bar v,\rho_r)
-$$
+Por consiguiente, para cada procedimiento $f_i$ perteneciente al ambiente recursivo, se cumple:
 
-Definimos el siguiente invariante para el cuerpo del procedimiento $f_i$:
+$$\mathrm{apply\text{-}env}(\rho_r,f_i)=\mathrm{cerradura}(X_i,B_i,\rho_r)$$
 
-$$
-\begin{aligned} \mathrm{Inv}_{\text{cuerpo}}(\rho_b,i)\equiv \forall j\in\{1,\ldots,k\},\quad &\bigl(f_j\text{ es la primera aparición de su nombre en }F\\ &\land f_j\notin X_i\bigr)\\ &\Rightarrow \mathrm{buscar}(\rho_b,f_j) =\langle X_j,B_j,\rho_r\rangle \end{aligned}
-$$
+Así, la implementación satisface el invariante de ligadura recursiva: cada procedimiento conserva el ambiente necesario para resolver sus propias llamadas recursivas y las referencias a los demás procedimientos del bloque.
 
-El invariante afirma que todo nombre de procedimiento declarado en el bloque recursivo que no esté oculto por un parámetro debe resolverse a la clausura correspondiente.
+#### ¿Por qué `let` no es suficiente?
 
-La condición $f_j\notin X_i$ es importante porque los parámetros pueden ocultar nombres del ambiente exterior. Si un parámetro tiene el mismo nombre que un procedimiento declarado en `letrec`, la búsqueda debe devolver el valor del parámetro mientras se evalúa ese cuerpo.
+Una declaración equivalente mediante `let` no garantiza la recursión, porque la clausura captura el ambiente disponible durante su definición, antes de que el nombre del procedimiento esté ligado al procedimiento mismo.
 
-### 4.4. Lema 1: resolución de procedimientos en el ambiente recursivo
+Por ejemplo:
 
-Sea $f_i$ un nombre de procedimiento cuya primera aparición se encuentra en la posición $i$ de $F$. Entonces:
-
-$$
-\mathrm{buscar}(\rho_r,f_i) = \langle X_i,B_i,\rho_r\rangle
-$$
-
-**Demostración.**
-
-Al buscar $f_i$ en $\rho_r$, `apply-env` identifica la variante `ambiente-recursivo`. La función `posicion-de` encuentra la posición correspondiente al identificador.
-
-Como $i$ representa la primera aparición del nombre, la posición encontrada es $i$. A continuación, `apply-env` construye una clausura con:
-
-- Los parámetros $X_i$.
-- El cuerpo $B_i$.
-- El propio ambiente recursivo $\rho_r$.
-
-Por tanto, el resultado es:
-
-$$
-\langle X_i,B_i,\rho_r\rangle
-$$
-
-Esto demuestra el lema. $\square$
-
-### 4.5. Lema 2: búsqueda a través de ambientes extendidos
-
-Sea:
-
-$$
-\sigma= \mathrm{ext} (Y_1,W_1, \mathrm{ext} (Y_2,W_2,\ldots \mathrm{ext}(Y_t,W_t,\rho_r)))
-$$
-
-Supóngase que:
-
-$$
-f_j\notin Y_s \qquad \text{para todo }s\in\{1,\ldots,t\}
-$$
-
-Entonces:
-
-$$
-\mathrm{buscar}(\sigma,f_j) = \mathrm{buscar}(\rho_r,f_j)
-$$
-
-**Demostración por inducción sobre $t$.**
-
-**Caso base: $t=0$.**
-
-No hay extensiones y $\sigma=\rho_r$. Por tanto:
-
-$$
-\mathrm{buscar}(\sigma,f_j) = \mathrm{buscar}(\rho_r,f_j)
-$$
-
-La propiedad se cumple.
-
-**Caso inductivo: $t>0$.**
-
-La primera extensión no contiene $f_j$, por lo que la búsqueda continúa en su ambiente padre. Esto equivale a buscar el identificador en las $t-1$ extensiones restantes.
-
-Por hipótesis de inducción, esa búsqueda produce el mismo resultado que buscar directamente en $\rho_r$.
-
-Por tanto, la propiedad se cumple para cualquier cantidad finita de extensiones. $\square$
-
-### 4.6. Teorema: el cuerpo del procedimiento satisface el invariante
-
-**Teorema.** Para todo procedimiento $f_i$ cuya primera aparición se encuentra en la posición $i$, el ambiente de evaluación de su cuerpo satisface:
-
-$$
-\mathrm{Inv}_{\text{cuerpo}}(\rho_b,i)
-$$
-
-**Demostración.**
-
-Por el Lema 1, buscar $f_i$ en $\rho_r$ devuelve la clausura:
-
-$$
-c_i=\langle X_i,B_i,\rho_r\rangle
-$$
-
-Al aplicar esa clausura, `apply-procedure` construye el ambiente del cuerpo:
-
-$$
-\rho_b=\mathrm{ext}(X_i,\bar v,\rho_r)
-$$
-
-Sea $f_j$ un procedimiento declarado en el mismo bloque que no pertenece a $X_i$. Por el Lema 2, como la extensión de parámetros no contiene $f_j$, se cumple:
-
-$$
-\mathrm{buscar}(\rho_b,f_j) = \mathrm{buscar}(\rho_r,f_j)
-$$
-
-Por el Lema 1:
-
-$$
-\mathrm{buscar}(\rho_r,f_j) = \langle X_j,B_j,\rho_r\rangle
-$$
-
-En consecuencia:
-
-$$
-\mathrm{buscar}(\rho_b,f_j) = \langle X_j,B_j,\rho_r\rangle
-$$
-
-Esta es la propiedad exigida por el invariante. Como el razonamiento vale para cada procedimiento que cumpla las condiciones indicadas, el invariante se mantiene.
-
-Por tanto, los procedimientos recursivos y mutuamente recursivos pueden recuperar las clausuras declaradas en el mismo `letrec`, siempre que sus nombres no estén ocultos por los parámetros del procedimiento actual. $\square$
-
-### 4.7. Diagrama del ambiente recursivo
-
-```mermaid
-graph TD
-  R["ρr: ambiente-recursivo<br/>f1(X1) = B1, ..., fk(Xk) = Bk"]
-  P["ρ: ambiente exterior"]
-  C["Clausura de fi<br/>parámetros: Xi<br/>cuerpo: Bi"]
-  R -->|"ambiente padre"| P
-  R -.->|"apply-env construye la clausura"| C
-  C -.->|"ambiente capturado = ρr"| R
-```
-
-El diagrama muestra que la clausura se construye cuando se busca el nombre del procedimiento. Su ambiente capturado es el mismo ambiente recursivo en el que se encontró la declaración.
-
-### 4.8. Por qué `let` no cumple el invariante recursivo
-
-En una declaración `let`, el valor asociado al identificador se evalúa en el ambiente exterior. Si ese valor es una clausura, captura el ambiente exterior antes de que se establezca la nueva ligadura.
-
-Formalmente:
-
-$$
-c=\langle X,B_f,\rho\rangle
-$$
-
-y después se crea:
-
-$$
-\rho'=\mathrm{ext}((f),(c),\rho)
-$$
-
-La clausura captura $\rho$, no $\rho'$. Por tanto, no existe una garantía de que su propio nombre pueda resolverse mediante el ambiente capturado.
-
-Si $f\notin\rho$, la búsqueda de $f$ desde el cuerpo de la clausura no encuentra la ligadura recién creada y puede terminar con un error de variable no ligada.
-
-#### Ejemplo de factorial con `let`
-
-```text
-let factorial = proc (n)
-                  if ==(n, 0) then 1
-                  else *(n, apply factorial (sub1(n))) end
-                end
-in apply factorial (5) end
-```
-
-En este ejemplo, la clausura de `factorial` captura el ambiente exterior. Si en él no existe una ligadura previa de `factorial`, la llamada recursiva no puede recuperar la clausura que está ejecutándose.
-
-El error esperado es equivalente a:
-
-```text
-apply-env: Variable no ligada: factorial
-```
-
-En cambio, `letrec` construye un ambiente recursivo que permite resolver el nombre de `factorial`.
-
-#### Caso de una ligadura anterior
-
-`let` no necesariamente produce un error si el nombre ya estaba ligado. En ese caso, la llamada puede recuperar la ligadura anterior y llamar al procedimiento equivocado.
-
-Considérese:
-
-```text
-let f = proc (n) 100 end
-in
-  let f = proc (n) apply f (n) end
-  in
-    apply f (1)
-  end
-end
-```
-
-La clausura del procedimiento interno captura el ambiente donde `f` está ligado al procedimiento exterior. Por ello, al evaluar `apply f (n)`, la búsqueda encuentra la ligadura exterior.
-
-El resultado es:
-
-$$
-\boxed{100}
-$$
-
-Este ejemplo demuestra que la recursión no depende solamente de que un procedimiento se llame a sí mismo por nombre, sino de que la búsqueda del identificador resuelva a la clausura correcta.
-
-### 4.9. Terminación del ejemplo de potencia
-
-Considérese el siguiente procedimiento recursivo:
-
-```text
-letrec
-  potencia (base, exp) =
-    if ==(exp, 0)
-    then 1
-    else *(base, apply potencia (base, sub1(exp)))
+    let potencia = proc (base, exp)
+      if ==(exp, 0)
+      then 1
+      else *(base, apply potencia (base, sub1(exp)))
+      end
+    in
+      apply potencia (2, 10)
     end
-in
-  apply potencia (2, 10)
-end
-```
 
-Se quiere demostrar que calcula $base^{exp}$ y que termina para exponentes enteros no negativos.
+En esta declaración, `potencia` no está disponible en el ambiente capturado por su propia clausura. Por ello, al intentar realizar la llamada recursiva, el intérprete produce un error de variable no ligada, como `Variable no ligada: potencia`.
 
-#### Precondición
+En cambio, `letrec` utiliza un ambiente recursivo que permite resolver el nombre del procedimiento durante su ejecución.
 
-La precondición es:
+#### Terminación del procedimiento `potencia`
 
-$$
-exp\in\mathbb{N}
-$$
+El taller propone el siguiente procedimiento:
 
-Es decir, el exponente debe ser un entero no negativo.
+    letrec
+      potencia (base, exp) =
+        if ==(exp, 0)
+        then 1
+        else *(base, apply potencia (base, sub1(exp)))
+        end
+    in
+      apply potencia (2, 10)
+    end
 
-#### Medida decreciente
+Para demostrar su terminación, se toma como medida el exponente $exp$, suponiendo que es un entero no negativo.
 
-Definimos:
+- **Caso base:** cuando $exp=0$, el procedimiento devuelve `1` y termina sin realizar otra llamada recursiva.
+- **Caso recursivo:** cuando $exp>0$, se realiza una llamada con `sub1(exp)`, por lo que la medida disminuye en una unidad.
 
-$$
-\mu(base,exp)=exp
-$$
+Como el exponente es un entero no negativo y disminuye estrictamente en cada llamada, necesariamente se alcanza el caso base. Por tanto, el procedimiento termina y calcula la potencia solicitada. Para el ejemplo del taller, el resultado de $2^{10}$ es `1024`.
 
-Cuando $exp>0$, la llamada recursiva utiliza `sub1(exp)`. Por tanto:
+#### Verificación mediante pruebas
 
-$$
-\mu'=exp-1
-$$
+Se realizaron pruebas directamente en DrRacket para comprobar el funcionamiento de la ligadura recursiva:
 
-y se cumple:
+- **Recursión simple:** el factorial de 6 produjo el resultado `720`.
+- **Recursión mutua:** los procedimientos `par?` e `impar?` pudieron invocarse entre sí y determinar correctamente que `par?(9)` devuelve `#f`.
+- **Caso base:** el factorial de cero devolvió `1`.
+- **Potencia con exponente cero:** el procedimiento `potencia` devolvió `1` para la expresión `potencia(7, 0)`.
+- **Selección de alternativas:** la expresión `case 3 of 1 => 100 of 3 => 300 otherwise => 0 end` devolvió `300`.
+- **Rama por defecto:** una expresión `case` sin coincidencias ejecutó la rama `otherwise` y devolvió `99`.
 
-$$
-0\leq\mu'<\mu
-$$
+Los resultados obtenidos confirman que el ambiente recursivo permite resolver las referencias entre procedimientos y que las condiciones de parada funcionan correctamente en los casos evaluados. Asimismo, las pruebas de `case` verifican la selección de alternativas y la ejecución de la rama por defecto.
 
-La medida pertenece a los números naturales y disminuye estrictamente en cada llamada recursiva. Por tanto, después de un número finito de llamadas alcanza cero.
+### Conclusión
 
-Cuando $exp=0$, se ejecuta la rama base, que retorna $1$ sin efectuar otra llamada recursiva.
-
-Para `potencia(2,10)`, la secuencia de medidas es:
-
-$$
-10,9,8,7,6,5,4,3,2,1,0
-$$
-
-Se producen once invocaciones del cuerpo: diez llamadas recursivas y una llamada correspondiente al caso base.
-
-#### Demostración de corrección del valor
-
-Se demuestra por inducción sobre $e$ que:
-
-$$
-\mathrm{potencia}(b,e)=b^e
-$$
-
-**Caso base: $e=0$.**
-
-El procedimiento retorna $1$, por lo que:
-
-$$
-\mathrm{potencia}(b,0)=1=b^0
-$$
-
-**Caso inductivo: $e>0$.**
-
-La función retorna:
-
-$$
-b\cdot\mathrm{potencia}(b,e-1)
-$$
-
-Por hipótesis de inducción:
-
-$$
-\mathrm{potencia}(b,e-1)=b^{e-1}
-$$
-
-Entonces:
-
-$$
-b\cdot\mathrm{potencia}(b,e-1) = b\cdot b^{e-1} = b^e
-$$
-
-La propiedad se cumple para $e$.
-
-Por tanto:
-
-$$
-\mathrm{potencia}(2,10)=2^{10}=1024
-$$
-
-La demostración de terminación depende de que el exponente pertenezca a $\mathbb{N}$. Con exponentes negativos o no enteros, la medida anterior no garantiza que el procedimiento alcance el caso base.
-
-### 4.10. Conclusión de la sección
-
-La implementación de `letrec` utiliza un ambiente recursivo que permite recuperar las clausuras de los procedimientos declarados. `apply-env` construye cada clausura con el ambiente recursivo como ambiente capturado, lo que mantiene el acceso a las ligaduras recursivas y mutuamente recursivas.
-
-La declaración `let` no garantiza este comportamiento, porque las clausuras capturan el ambiente exterior antes de establecer la nueva ligadura. Esto puede producir un error de variable no ligada o una llamada a una ligadura anterior.
-
-Por su parte, el ejemplo de potencia termina bajo la precondición $exp\in\mathbb{N}$, ya que el exponente disminuye estrictamente hasta alcanzar cero.
+La corrección de la ligadura recursiva consiste en garantizar que cada procedimiento definido mediante `letrec` pueda acceder a su propio nombre y a los demás procedimientos del bloque recursivo. Esto se consigue mediante la construcción de un ambiente recursivo y la creación de clausuras que conservan dicho ambiente. A diferencia de `let`, esta implementación permite resolver correctamente las llamadas recursivas. Además, en el procedimiento `potencia`, la disminución del exponente en cada llamada garantiza la llegada al caso base para exponentes enteros no negativos, asegurando la terminación del procedimiento.
 
 ---
 
-## 5. Corrección de `case-exp`
+### 2.3 Corrección de `case-exp` y `seleccionar-caso`
 
-### 5.1. Especificación formal
+#### Especificación
 
-La expresión `case-exp` evalúa una expresión de control, compara su resultado con los valores de las ramas y ejecuta la acción correspondiente a la primera coincidencia. Si ninguna rama coincide, ejecuta la expresión `otherwise`.
+La función `seleccionar-caso` es responsable de buscar la primera alternativa cuyo valor coincida con el valor de control. Si encuentra una coincidencia, evalúa la acción correspondiente; si no quedan alternativas, evalúa la expresión predeterminada.
 
-La función auxiliar `seleccionar-caso` recibe:
+Por su parte, la variante `case-exp` de `evaluar-expresion` evalúa la expresión de control, comprueba que su resultado sea numérico y delega la selección de alternativas en `seleccionar-caso`.
 
-- El valor numérico de control.
-- Una lista de valores de las ramas.
-- Una lista de expresiones asociadas a esas ramas.
-- La expresión predeterminada.
-- El ambiente de evaluación.
+- **Tipo de `seleccionar-caso`:** número × lista de números × lista de expresiones × expresión predeterminada × ambiente → valor.
+- **Tipo de `case-exp`:** expresión de control, primer valor, primera acción, valores restantes, acciones restantes, acción predeterminada y ambiente → valor.
+- **Precondición:** la expresión de control debe evaluarse a un número. Además, las listas de valores y acciones deben conservar la correspondencia entre cada alternativa y su acción, y tener la misma longitud.
+- **Postcondición:** se evalúa la acción correspondiente a la primera alternativa cuyo valor coincide con el control. Si ninguna alternativa coincide, se evalúa la acción predeterminada. Si el control no es numérico, se genera un error.
 
-La especificación es:
+Sean $v$ el valor del control, $c_1,\ldots,c_n$ los valores de las alternativas, $A_1,\ldots,A_n$ sus acciones, $D$ la acción predeterminada y $\rho$ el ambiente de evaluación.
 
-- **Tipo:** `seleccionar-caso` : `número × lista de números × lista de expresiones × expresión × ambiente → valor`.
-- **Precondición:** el valor de control es numérico; los valores de las ramas son numéricos; las listas de valores y acciones tienen la misma longitud; y el ambiente es válido.
-- **Postcondición:** se evalúa la acción correspondiente a la primera coincidencia. Si no existe coincidencia, se evalúa `otherwise`. La expresión de control se evalúa una sola vez y no se evalúan las acciones que no fueron seleccionadas.
+La especificación de la selección se expresa formalmente como:
 
-Sea:
+$$\mathrm{resultado}(v)=\begin{cases}\mathrm{value\text{-}of}(A_i,\rho), & \text{si } i=\min\{j\mid c_j=v\},\\\mathrm{value\text{-}of}(D,\rho), & \text{si no existe tal } i.\end{cases}$$
 
-$$
-v=\mathrm{value{-}of}(e,\rho)
-$$
+La expresión de control se evalúa una sola vez, antes de iniciar la búsqueda de alternativas. La función debe conservar el orden original de las alternativas para garantizar que se seleccione la primera coincidencia.
 
-y sean:
+#### Código de `seleccionar-caso`
 
-$$
-V=(k_1,\ldots,k_m)
-$$
-
-$$
-A=(a_1,\ldots,a_m)
-$$
-
-La postcondición se expresa como:
-
-$$
-\mathrm{Post}\equiv \begin{cases} \mathrm{error} & \text{si }v\text{ no es numérico}\\ \mathrm{value{-}of}(a_i,\rho), \quad i=\min\{j:k_j=v\} & \text{si existe una coincidencia}\\ \mathrm{value{-}of}(d,\rho) & \text{si no existe ninguna coincidencia} \end{cases}
-$$
-
-donde $d$ representa la expresión predeterminada.
-
-### 5.2. Implementación analizada
-
-La función auxiliar puede expresarse así:
-
-```scheme
-; seleccionar-caso : numero x lista de numeros x lista de expresiones
-;                    x expresion x ambiente -> valor
-; Selecciona la acción de la primera coincidencia.
-; Si no hay coincidencias, evalúa la expresión predeterminada.
+```racket
+;; seleccionar-caso : numero x lista de numeros x lista de expresiones
+;;                    x expresion x ambiente -> valor
+;; Busca la primera alternativa cuyo valor coincide con el control.
+;; Si ninguna coincide, evalua la expresion predeterminada.
 
 (define seleccionar-caso
   (lambda (control valores acciones default env)
     (cond
       [(null? valores)
        (evaluar-expresion default env)]
-
       [(= control (car valores))
        (evaluar-expresion (car acciones) env)]
-
       [else
        (seleccionar-caso
         control
@@ -995,9 +604,24 @@ La función auxiliar puede expresarse así:
         env)])))
 ```
 
-En la evaluación de `case-exp`, primero se evalúa la expresión de control y después se comprueba su tipo:
+La función recibe el valor de control, las listas de valores y acciones, la expresión predeterminada y el ambiente de evaluación.
 
-```scheme
+Su comportamiento se divide en tres posibilidades:
+
+1. **Lista de valores vacía:** cuando no quedan alternativas por revisar, evalúa la expresión predeterminada en el ambiente recibido.
+2. **Coincidencia:** cuando el control coincide con el primer valor de la lista, evalúa la primera acción correspondiente y devuelve su resultado.
+3. **Ausencia de coincidencia inicial:** cuando el control no coincide con el primer valor, realiza una llamada recursiva con las listas restantes, conservando el control, la expresión predeterminada y el ambiente.
+
+La función mantiene la correspondencia entre valores y acciones al eliminar simultáneamente el primer elemento de ambas listas. Esto permite que cada alternativa conserve su acción asociada durante toda la búsqueda.
+
+La implementación presupone que ambas listas tienen la misma longitud. Si esta condición se cumple, cada comparación dispone de una acción correspondiente y la selección puede realizarse correctamente.
+
+#### Código de `case-exp`
+
+La variante `case-exp` de `evaluar-expresion` es:
+
+```racket
+;; Parte 4: seleccion de alternativas mediante case.
 (case-exp (exp primer-valor primera-accion valores acciones default)
   (let ((control (evaluar-expresion exp env)))
     (if (number? control)
@@ -1010,96 +634,86 @@ En la evaluación de `case-exp`, primero se evalúa la expresión de control y d
         (eopl:error
          'case-exp
          "El valor de control debe ser numerico: ~s"
-         control))))
+         control)))
 ```
 
-La implementación reconstruye las listas completas mediante `cons`, de modo que el primer valor y su acción correspondiente se incluyen en el recorrido.
+La implementación evalúa primero la expresión de control y almacena su resultado en la variable `control`. Esta evaluación se realiza una sola vez.
 
-### 5.3. Propiedad que debe demostrarse
+Si el resultado es numérico, la función construye las listas completas de alternativas mediante `cons`. El primer valor se incorpora a la lista `valores` y la primera acción se incorpora a la lista `acciones`. Después, delega la búsqueda en `seleccionar-caso`.
 
-Sea $S(V,A)$ la siguiente propiedad:
+Si el resultado no es numérico, la función genera un error explícito mediante `eopl:error` y no ejecuta la búsqueda de alternativas.
 
-Para listas de valores $V=(k_1,\ldots,k_m)$ y acciones $A=(a_1,\ldots,a_m)$ de igual longitud, un valor numérico $c$, una expresión predeterminada $d$ y un ambiente $\rho$:
+La construcción con `cons` es importante porque la representación de `case-exp` separa la primera alternativa de las alternativas restantes. Al incorporarlas a sus respectivas listas, `seleccionar-caso` puede procesarlas en el orden original sin distinguir entre la primera alternativa y las demás.
 
-$$
-\mathrm{seleccionar{-}caso}(c,V,A,d,\rho) = \begin{cases} \mathrm{value{-}of}(a_i,\rho), & i=\min\{j:k_j=c\}\\ \mathrm{value{-}of}(d,\rho), & \text{si no existe coincidencia} \end{cases}
-$$
+#### Estrategia de demostración
 
-Esta propiedad establece que se selecciona la acción asociada a la primera coincidencia y que la expresión predeterminada se utiliza únicamente cuando no hay coincidencias.
+La corrección de `seleccionar-caso` se demuestra mediante inducción estructural sobre la lista de valores de las alternativas. Se consideran el caso base, en el que la lista está vacía, y el caso inductivo, en el que existe al menos una alternativa.
 
-### 5.4. Demostración por inducción estructural
+Para `case-exp`, se realiza un análisis de casos sobre el resultado de evaluar la expresión de control: un caso para los valores numéricos y otro para los valores no numéricos.
 
-La demostración se realiza sobre las listas paralelas de valores y acciones.
+La demostración supone que las listas de valores y acciones tienen la misma longitud, que cada valor corresponde a su acción y que las evaluaciones involucradas producen resultados cuando se necesitan. Estas condiciones permiten analizar la selección sin introducir errores ajenos a la función estudiada.
 
-#### Caso base
+#### Demostración de `seleccionar-caso`
 
-Supóngase que:
+**Caso base: no quedan alternativas.**
 
-$$
-V=\varnothing,\qquad A=\varnothing
-$$
+Supongamos que la lista de valores está vacía:
 
-La primera condición del `cond` es verdadera:
+$$C=[]$$
 
-```scheme
+En este caso, se cumple la primera condición del `cond`:
+
+```racket
 [(null? valores)
  (evaluar-expresion default env)]
 ```
 
-La función retorna el valor de la expresión predeterminada:
+Por tanto, la función evalúa la expresión predeterminada en el ambiente $\rho$:
 
-$$
-\mathrm{value{-}of}(d,\rho)
-$$
+$$r=\mathrm{value\text{-}of}(D,\rho)$$
 
-Como no existen elementos en $V$, no puede existir ninguna coincidencia.
+Como no quedan alternativas, no existe ningún valor que pueda coincidir con el control. En consecuencia, evaluar la expresión predeterminada satisface la especificación.
 
-Por tanto, se cumple $S(V,A)$.
+**Caso inductivo: existe al menos una alternativa.**
 
-#### Caso inductivo
+Supongamos que la lista de valores es:
 
-Supóngase que:
+$$C=(c_1,c_2,\ldots,c_n)$$
 
-$$
-V=(k_1)::V'
-$$
+y que la lista de acciones correspondiente es:
 
-y:
+$$A=(A_1,A_2,\ldots,A_n)$$
 
-$$
-A=(a_1)::A'
-$$
+Se consideran dos posibilidades.
 
-Se asume como hipótesis de inducción que $S(V',A')$ se cumple.
+**Subcaso A: el control coincide con la primera alternativa.**
 
-Existen dos posibilidades.
+Si:
 
-**Caso 1: $k_1=c$.**
+$$v=c_1$$
 
-La condición:
+se ejecuta la segunda condición del `cond`:
 
-```scheme
+```racket
 [(= control (car valores))
  (evaluar-expresion (car acciones) env)]
 ```
 
-es verdadera.
+La función evalúa la primera acción $A_1$ en el ambiente $\rho$ y devuelve:
 
-La función retorna:
+$$r=\mathrm{value\text{-}of}(A_1,\rho)$$
 
-$$
-\mathrm{value{-}of}(a_1,\rho)
-$$
+Como $c_1$ es el primer valor de la lista y coincide con $v$, ninguna alternativa anterior puede coincidir. Por tanto, la función selecciona correctamente la primera alternativa coincidente.
 
-Como la primera posición ya coincide, no es necesario recorrer las listas restantes. La acción seleccionada es la de menor índice.
+**Subcaso B: el control no coincide con la primera alternativa.**
 
-Por tanto, se cumple $S(V,A)$.
+Si:
 
-**Caso 2: $k_1\neq c$.**
+$$v\neq c_1$$
 
-Se ejecuta la rama recursiva:
+se ejecuta la llamada recursiva:
 
-```scheme
+```racket
 (seleccionar-caso
  control
  (cdr valores)
@@ -1108,174 +722,243 @@ Se ejecuta la rama recursiva:
  env)
 ```
 
-La llamada recibe las listas $V'$ y $A'$.
+La función elimina el primer valor y la primera acción y continúa la búsqueda sobre las listas restantes.
 
-Por hipótesis de inducción, el resultado corresponde a la primera coincidencia entre las listas restantes o a la expresión predeterminada si no existe ninguna coincidencia.
+**Hipótesis inductiva:** supongamos que `seleccionar-caso` funciona correctamente para las listas restantes, cuya longitud es menor que la de las listas originales. Esto significa que devuelve la acción correspondiente a la primera coincidencia entre las alternativas restantes o evalúa la acción predeterminada si no encuentra ninguna.
 
-Como $k_1\neq c$, descartar el primer elemento no elimina ninguna coincidencia válida.
+Como $v\neq c_1$, la primera alternativa no puede ser la seleccionada. Por tanto, si existe una coincidencia en las listas restantes, la primera coincidencia de dichas listas también es la primera coincidencia de la lista original.
 
-Por tanto, el resultado también satisface $S(V,A)$.
+Si no existe ninguna coincidencia en las listas restantes, tampoco existe una coincidencia en la lista original, porque se sabe que la primera alternativa no coincide. En consecuencia, evaluar la expresión predeterminada es correcto.
 
-En ambos casos se conserva la propiedad. Por inducción estructural, $S(V,A)$ se cumple para todas las listas paralelas de igual longitud. $\square$
+Por la hipótesis inductiva, la llamada recursiva devuelve el resultado especificado.
 
-### 5.5. Primera coincidencia y evaluación de `otherwise`
+Los dos subcasos cubren todas las posibilidades para una lista no vacía. Junto con el caso base, demuestran que `seleccionar-caso` devuelve la acción correspondiente a la primera coincidencia o, si no existe ninguna, evalúa la acción predeterminada.
 
-La implementación selecciona la primera coincidencia porque compara el control con el primer elemento antes de efectuar la llamada recursiva.
+Por tanto, la función satisface la especificación establecida.
 
-Cuando encuentra una coincidencia, evalúa la acción correspondiente y no continúa recorriendo las ramas restantes.
+#### Demostración de `case-exp`
 
-Si no encuentra coincidencias, elimina simultáneamente un valor y su acción en cada llamada recursiva. Cuando la lista de valores queda vacía, evalúa `default`.
+La corrección de `case-exp` se demuestra mediante un análisis de casos sobre el resultado de evaluar la expresión de control.
 
-Por tanto:
+**Caso 1: la expresión de control produce un número.**
 
-- Si existe una coincidencia, se evalúa únicamente la acción de la primera coincidencia.
-- Si no existe ninguna coincidencia, se evalúa `otherwise`.
-- Las acciones que no fueron seleccionadas no se evalúan.
+Sea:
 
-Considérese:
+$$v=\mathrm{value\text{-}of}(exp,\rho)$$
 
-```text
-case 1 of
-  1 => 10
-  2 => zzz
-  otherwise => yyy
-end
+Si:
+
+$$\mathrm{number?}(v)=\mathrm{true}$$
+
+la implementación llama a `seleccionar-caso` con las listas completas de valores y acciones, construidas mediante `cons`:
+
+```racket
+(seleccionar-caso
+ control
+ (cons primer-valor valores)
+ (cons primera-accion acciones)
+ default
+ env)
 ```
 
-La primera rama coincide con el valor de control, por lo que el resultado es:
+Como las listas conservan el orden original y mantienen la correspondencia entre cada valor y su acción, la llamada recibe todas las alternativas del `case-exp`.
 
-$$
-\boxed{10}
-$$
+Por la demostración anterior, `seleccionar-caso` devuelve el resultado de evaluar la acción correspondiente a la primera coincidencia o evalúa la acción predeterminada si ninguna alternativa coincide.
 
-Las expresiones `zzz` e `yyy` no se evalúan. En consecuencia, la falta de ligaduras para esos identificadores no afecta el resultado de esta expresión, siempre que el intérprete implemente la evaluación perezosa de las ramas no seleccionadas que describe el código.
+Además, como `control` se obtiene mediante una única llamada a `evaluar-expresion`, la expresión de control se evalúa una sola vez.
 
-### 5.6. Error cuando el control no es numérico
+Por tanto, `case-exp` satisface la especificación cuando el control es numérico.
 
-La expresión `case-exp` evalúa primero el control:
+**Caso 2: la expresión de control no produce un número.**
 
-```scheme
-(let ((control (evaluar-expresion exp env)))
-  ...)
+Si:
+
+$$\mathrm{number?}(v)=\mathrm{false}$$
+
+se ejecuta la rama alternativa del `if`:
+
+```racket
+(eopl:error
+ 'case-exp
+ "El valor de control debe ser numerico: ~s"
+ control)
 ```
 
-A continuación, comprueba:
+La función genera un error explícito y no invoca `seleccionar-caso`.
 
-```scheme
-(number? control)
-```
+Por tanto, la implementación rechaza los valores de control no numéricos, tal como establece la especificación.
 
-Si el resultado no es numérico, se ejecuta `eopl:error` y `seleccionar-caso` no se invoca.
+Los dos casos cubren todas las posibilidades contempladas por la implementación. En consecuencia, `case-exp` satisface la especificación bajo las precondiciones establecidas.
 
-Si el control es numérico, las comparaciones de `seleccionar-caso` reciben un número de control y los valores numéricos de las ramas. Bajo la precondición de que esos valores son numéricos, la comparación `=` puede realizarse sin un error de tipo.
+#### Terminación
 
-Por ejemplo:
+Para demostrar la terminación de `seleccionar-caso`, se utiliza como medida la longitud de la lista de valores que quedan por revisar:
 
-```text
-case true of
-  1 => 1
-  otherwise => 0
-end
-```
+$$\mu(C)=|C|$$
 
-El valor de control es `#t`, que no es numérico. La evaluación debe levantar el error:
+Esta medida pertenece al conjunto de los números naturales:
 
-```text
-El valor de control debe ser numerico: #t
-```
+$$\mu(C)\in\mathbb{N}$$
 
-Esto demuestra que la validación del tipo del control ocurre antes de la selección de las ramas.
+**Caso base:** cuando la lista está vacía:
 
-### 5.7. Teorema: la expresión de control se evalúa una sola vez
+$$\mu(C)=0$$
 
-**Teorema.** La expresión de control $e$ se evalúa exactamente una vez durante la evaluación de una expresión `case-exp`, siempre que su propia evaluación termine.
+la función evalúa la expresión predeterminada y no realiza otra llamada recursiva.
 
-**Demostración.**
+**Caso inductivo:** cuando la lista no está vacía y el control no coincide con el primer valor, la función realiza una llamada recursiva sobre `(cdr valores)`. En consecuencia, la medida disminuye estrictamente:
 
-En la implementación, la expresión de control se evalúa en el `let`:
+$$\mu(\mathrm{cdr}(C))=\mu(C)-1$$
 
-```scheme
-(let ((control (evaluar-expresion exp env)))
-  ...)
-```
+Como la medida es un número natural y disminuye en cada llamada recursiva, no puede disminuir indefinidamente. La búsqueda necesariamente llega a una coincidencia o al caso base de la lista vacía.
 
-Esta llamada produce el valor almacenado en `control`.
+Por tanto, la búsqueda de alternativas termina, siempre que las operaciones de comparación y las evaluaciones que se ejecutan también terminen.
 
-Después de ese paso, `seleccionar-caso` recibe el valor numérico `control`, no la expresión original `exp`. La función auxiliar compara ese valor con los literales de las ramas y no vuelve a evaluar la expresión de control.
+En el caso de `case-exp`, la terminación completa depende además de que termine la evaluación de la expresión de control y de que termine la acción seleccionada o la acción predeterminada. La función no garantiza la terminación de expresiones arbitrarias que puedan evaluarse durante el proceso.
 
-Las únicas expresiones evaluadas por `seleccionar-caso` son la acción seleccionada o la expresión predeterminada.
+#### Conclusión
 
-Por tanto, la expresión de control se evalúa una sola vez, independientemente de la cantidad de ramas. $\square$
+La implementación de `seleccionar-caso` es correcta respecto a la selección de la primera alternativa coincidente y a la evaluación de la expresión predeterminada cuando no existe ninguna coincidencia. La demostración inductiva establece que la búsqueda conserva el orden de las alternativas y la correspondencia entre sus valores y acciones.
 
-Si se volviera a evaluar la expresión de control en cada comparación, podrían producirse hasta $m$ evaluaciones, una por rama. La implementación evita ese comportamiento al guardar el resultado en `control`.
+Por su parte, `case-exp` evalúa la expresión de control una sola vez, verifica que el resultado sea numérico y construye las listas completas de alternativas antes de delegar la selección. Si el control no es numérico, genera un error explícito.
 
-### 5.8. Terminación del recorrido de las ramas
-
-Para demostrar la terminación de `seleccionar-caso`, se define la medida:
-
-$$
-\mu(V)=|V|
-$$
-
-donde $|V|$ es la longitud de la lista de valores.
-
-En cada llamada recursiva se utiliza:
-
-```scheme
-(cdr valores)
-```
-
-Por tanto:
-
-$$
-\mu' = \mu-1
-$$
-
-Si la lista contiene $m$ elementos inicialmente, la medida toma valores naturales:
-
-$$
-m,m-1,m-2,\ldots,1,0
-$$
-
-La medida disminuye estrictamente y no puede ser negativa. Cuando llega a cero, se cumple `(null? valores)` y el procedimiento termina el recorrido.
-
-El recorrido realiza como máximo $m$ comparaciones. Después evalúa la acción seleccionada o la expresión predeterminada.
-
-La terminación del recorrido queda demostrada. La terminación completa de la evaluación depende, además, de que termine la expresión seleccionada.
-
-### 5.9. Conclusión de la sección
-
-La implementación de `case-exp` satisface la especificación descrita cuando las listas de valores y acciones están correctamente alineadas y sus elementos cumplen las precondiciones.
-
-La demostración por inducción estructural establece que `seleccionar-caso` encuentra la primera coincidencia o evalúa la expresión predeterminada si no existe ninguna. La validación inicial garantiza que el control sea numérico, mientras que la variable `control` permite demostrar que la expresión de control se evalúa una sola vez.
-
-Finalmente, la medida $\mu(V)=|V|$ demuestra que el recorrido de las ramas termina después de un número finito de comparaciones.
+Finalmente, la medida basada en la longitud de la lista demuestra que la búsqueda recursiva de alternativas termina. En conjunto, ambas funciones cumplen la especificación establecida, siempre que se satisfagan las precondiciones y terminen las expresiones evaluadas.
 
 ---
 
-## 6. Conclusiones generales
+## 3. Propiedades adicionales
 
-Las tres partes analizadas cumplen sus especificaciones bajo las precondiciones establecidas y suponiendo que las expresiones evaluadas por el intérprete terminan cuando corresponde.
+### 3.1. Resolución de ligaduras y shadowing
 
-### 6.1. `apply-procedure`
+La función `apply-env`, definida en el módulo `ambiente.rkt`, permite consultar el valor asociado a un identificador dentro de la cadena de ambientes. Su implementación utiliza `posicion-de` para determinar si el identificador está presente en el ambiente actual. Si lo encuentra, devuelve el valor correspondiente mediante `list-ref`; de lo contrario, continúa la búsqueda en el ambiente padre mediante una llamada recursiva a `apply-env`.
 
-La función comprueba la cantidad de argumentos y evalúa el cuerpo de la clausura en el ambiente de definición extendido con los valores recibidos. Esto preserva el alcance léxico y evita que una ligadura introducida posteriormente en el ambiente de llamada cambie el resultado de la función.
+Este comportamiento garantiza que, cuando un identificador tiene varias ligaduras en distintos niveles de anidamiento, prevalezca la más cercana al punto de evaluación. Esta propiedad se conoce como *shadowing*.
 
-### 6.2. `letrec` y `apply-env`
+Considérense los siguientes ambientes:
 
-La implementación del ambiente recursivo permite que los procedimientos declarados puedan recuperar sus propias clausuras y las de otros procedimientos del mismo bloque. El invariante demuestra que la clausura conserva el ambiente recursivo, mientras que la comparación con `let` explica por qué una declaración no recursiva no garantiza el mismo comportamiento.
+$$\rho_1 = \mathrm{ext}((x),(10),\rho_0)$$
 
-La terminación del ejemplo de potencia queda demostrada bajo la precondición de que el exponente sea un número natural, pues la medida disminuye estrictamente hasta alcanzar cero.
+$$\rho_2 = \mathrm{ext}((x),(20),\rho_1)$$
 
-### 6.3. `case-exp`
+Al consultar el identificador $x$ en $\rho_2$, se obtiene:
 
-La función auxiliar recorre las listas paralelas de valores y acciones y selecciona la primera coincidencia. Si no existe, evalúa `otherwise`. El control se evalúa una sola vez, se comprueba que sea numérico y el recorrido termina porque la lista disminuye en cada llamada recursiva.
+$$\mathrm{apply\text{-}env}(\rho_2,x)=20$$
 
-En conjunto, estas demostraciones justifican las propiedades de corrección de los componentes analizados y explican cómo las reglas de evaluación, los ambientes y las clausuras contribuyen al comportamiento del intérprete.
+La búsqueda encuentra $x$ en el ambiente actual $\rho_2$ y devuelve el valor $20$, sin continuar hacia el ambiente padre $\rho_1$, donde el mismo identificador está asociado con el valor $10$.
+
+La implementación también contempla el caso en que un identificador no se encuentra en ninguno de los ambientes de la cadena. Cuando la búsqueda alcanza `ambiente-vacio`, `apply-env` genera un error indicando que la variable no está ligada.
+
+Por tanto, el código de `apply-env` implementa correctamente la resolución de ligaduras y el *shadowing*: las ligaduras más cercanas tienen prioridad sobre las más externas, y las variables no definidas producen un error.
+
+### 3.2. Alcance léxico de los procedimientos
+
+La implementación de los procedimientos en los módulos `interprete.rkt` y `ambiente.rkt` respeta el alcance léxico mediante el uso de clausuras. Una clausura almacena los parámetros del procedimiento, su cuerpo y el ambiente en el que fue definido.
+
+En `interprete.rkt`, la expresión `proc-exp` construye una clausura con el ambiente actual:
+
+```racket
+(proc-exp (ids body)
+  (cerradura ids body env))
+```
+
+De esta manera, el procedimiento conserva las ligaduras disponibles en el momento de su definición, sin evaluar anticipadamente el cuerpo.
+
+Posteriormente, cuando se aplica el procedimiento, `apply-procedure` recupera los parámetros, el cuerpo y el ambiente de definición almacenado en la clausura. Si la cantidad de argumentos coincide con la cantidad de parámetros, extiende el ambiente de definición con las nuevas ligaduras y evalúa el cuerpo en el ambiente resultante:
+
+```racket
+(define apply-procedure
+  (lambda (proc args)
+    (cases procval proc
+      (cerradura (ids body env-definicion)
+        (if (= (length ids) (length args))
+            (evaluar-expresion
+             body
+             (ambiente-extendido ids args env-definicion))
+            (eopl:error
+             'apply-procedure
+             "se esperaban ~s argumento(s) y llegaron ~s"
+             (length ids)
+             (length args)))))))
+```
+
+El aspecto fundamental es que la extensión se realiza sobre `env-definicion`, no sobre el ambiente desde el cual se invoca el procedimiento. Esto evita que las ligaduras locales del lugar de llamada alteren el significado de las variables libres del cuerpo.
+
+Por ejemplo, considérese el siguiente programa:
+
+```text
+let
+  x = 10
+in
+  let
+    f = proc() x end
+  in
+    let
+      x = 20
+    in
+      apply f()
+    end
+  end
+end
+```
+
+El resultado esperado es:
+
+$$10$$
+
+La razón es que `f` se definió cuando $x=10$. Aunque posteriormente se introduce otra ligadura de $x$ con valor $20$, esta pertenece al ambiente de llamada y no reemplaza la ligadura conservada por la clausura.
+
+En consecuencia, la implementación distingue correctamente entre el ambiente de definición y el ambiente de llamada, garantizando el alcance léxico de los procedimientos.
+
+### 3.3. Evaluación única de la expresión de control en `case`
+
+La implementación de `case-exp`, definida en `interprete.rkt`, evalúa la expresión de control una sola vez mediante un `let` que almacena su resultado en la variable `control`. A continuación, comprueba que dicho resultado sea numérico y, si cumple esta condición, invoca a `seleccionar-caso` para buscar la alternativa correspondiente.
+
+La estructura implementada es la siguiente:
+
+```racket
+(case-exp (exp primer-valor primera-accion valores acciones default)
+  (let ((control (evaluar-expresion exp env)))
+    (if (number? control)
+        (seleccionar-caso control (cons primer-valor valores) (cons primera-accion acciones) default env)
+        (eopl:error
+         'case-exp
+         "El valor de control debe ser numerico: ~s"
+         control))))
+```
+
+La función `seleccionar-caso` recibe el valor de control ya calculado, la lista de valores que se deben comparar, la lista de acciones asociadas, la expresión predeterminada y el ambiente de evaluación.
+
+Su comportamiento puede describirse mediante los siguientes casos:
+
+- **Lista de alternativas vacía:** cuando no quedan valores por comparar, evalúa la expresión `default` en el ambiente recibido.
+- **Coincidencia:** cuando `control` es igual al primer valor de la lista, evalúa la primera acción y devuelve su resultado, sin examinar las alternativas restantes.
+- **Ausencia de coincidencia en la alternativa actual:** elimina el primer valor y su acción correspondiente, y continúa la búsqueda con las listas restantes.
+
+La implementación de `seleccionar-caso` es:
+
+```racket
+(define seleccionar-caso
+  (lambda (control valores acciones default env)
+    (cond
+      [(null? valores)
+       (evaluar-expresion default env)]
+      [(= control (car valores))
+       (evaluar-expresion (car acciones) env)]
+      [else
+       (seleccionar-caso control (cdr valores) (cdr acciones) default env)])))
+```
+
+En esta función, los valores y las acciones se recorren en paralelo, conservando la correspondencia entre cada alternativa y su acción. La gramática de `case-exp` establece una primera pareja de valor y acción, seguida de cero o más parejas adicionales, por lo que las listas se construyen a partir de una alternativa inicial y sus respectivas continuaciones.
+
+La evaluación única de la expresión de control se garantiza porque `evaluar-expresion` aparece una sola vez para dicha expresión, antes de iniciar la búsqueda. Las comparaciones posteriores utilizan el valor almacenado en `control`, en lugar de volver a evaluar la expresión original.
+
+Además, la implementación establece que el valor de control debe ser numérico. Si no lo es, se genera un error mediante `eopl:error` y no se ejecuta la selección de alternativas.
+
+Por tanto, el código implementa una selección ordenada: evalúa únicamente la acción asociada con la primera coincidencia, utiliza la expresión predeterminada cuando no encuentra ninguna coincidencia y evita repetir la evaluación de la expresión de control.
 
 ---
 
-## 7. Referencias
+## 4. Referencias
 
 - Friedman, D. P., y Wand, M. *Essentials of Programming Languages*. 3.ª edición. MIT Press, 2008. Secciones relacionadas con especificación inductiva, ambientes, procedimientos, clausuras y procedimientos recursivos.
 - Racket Documentation. *The Racket Guide* y documentación del lenguaje `eopl`.

@@ -34,7 +34,7 @@ La demostración de corrección del resultado no implica automáticamente la ter
 
 ### 1.2. Corrección de programas iterativos
 
-Para un procedimiento iterativo se pueden definir un estado $s$, un estado inicial $s_0$, una condición de terminación y una invariante $\operatorname{Inv}(s)$.
+Para un procedimiento iterativo se pueden definir un estado $s$, un estado inicial $s_0$, una condición de terminación y una invariante $\mathrm{Inv}(s)$.
 
 La corrección se argumenta demostrando:
 
@@ -57,11 +57,11 @@ Para las demostraciones se utiliza la siguiente notación:
 
 - $\rho$: ambiente de evaluación.
 - $\varnothing$: ambiente vacío.
-- $\operatorname{ext}(X,V,\rho)$: ambiente extendido con identificadores $X$, valores $V$ y ambiente padre $\rho$.
-- $\operatorname{rec}(F,\bar X,\bar B,\rho)$: ambiente recursivo con nombres de procedimientos $F$, listas de parámetros $\bar X$, cuerpos $\bar B$ y ambiente exterior $\rho$.
+- $\mathrm{ext}(X,V,\rho)$: ambiente extendido con identificadores $X$, valores $V$ y ambiente padre $\rho$.
+- $\mathrm{rec}(F,\bar X,\bar B,\rho)$: ambiente recursivo con nombres de procedimientos $F$, listas de parámetros $\bar X$, cuerpos $\bar B$ y ambiente exterior $\rho$.
 - $\langle X,B,\rho\rangle$: clausura con parámetros $X$, cuerpo $B$ y ambiente capturado $\rho$.
 - $\text{value-of}(e,\rho)$: resultado de evaluar la expresión $e$ en el ambiente $\rho$.
-- $\operatorname{error}$: resultado de una evaluación que levanta un error explícito mediante `eopl:error`.
+- $\mathrm{error}$: resultado de una evaluación que levanta un error explícito mediante `eopl:error`.
 
 ### 2.1. Búsqueda de identificadores
 
@@ -70,27 +70,27 @@ La búsqueda de un identificador depende de la variante del ambiente.
 En el ambiente vacío, una variable no está ligada:
 
 $$
-\operatorname{buscar}(\varnothing,y)=\operatorname{error}
+\mathrm{buscar}(\varnothing,y)=\mathrm{error}
 $$
 
 En un ambiente extendido, si $y$ se encuentra entre los identificadores ligados, se retorna el valor correspondiente. En caso contrario, la búsqueda continúa en el ambiente padre:
 
 $$
-\operatorname{buscar}(\operatorname{ext}(X,V,\rho),y)=
+\mathrm{buscar}(\mathrm{ext}(X,V,\rho),y)=
 \begin{cases}
 v_i & \text{si } i=\min\{j:x_j=y\}\\
-\operatorname{buscar}(\rho,y) & \text{si } y\notin X
+\mathrm{buscar}(\rho,y) & \text{si } y\notin X
 \end{cases}
 $$
 
 En un ambiente recursivo, si el identificador corresponde a un procedimiento declarado, se construye una clausura cuyo ambiente capturado es el propio ambiente recursivo:
 
 $$
-\operatorname{buscar}(\operatorname{rec}(F,\bar X,\bar B,\rho),y)=
+\mathrm{buscar}(\mathrm{rec}(F,\bar X,\bar B,\rho),y)=
 \begin{cases}
 \langle X_i,B_i,\rho_r\rangle
 & \text{si } i=\min\{j:f_j=y\}\\
-\operatorname{buscar}(\rho,y)
+\mathrm{buscar}(\rho,y)
 & \text{si } y\notin F
 \end{cases}
 $$
@@ -98,7 +98,7 @@ $$
 donde:
 
 $$
-\rho_r=\operatorname{rec}(F,\bar X,\bar B,\rho)
+\rho_r=\mathrm{rec}(F,\bar X,\bar B,\rho)
 $$
 
 Esta última regla es fundamental para la corrección de `letrec`: la clausura conserva el ambiente que contiene las declaraciones recursivas.
@@ -146,7 +146,7 @@ $$
 con:
 
 $$
-\rho_r=\operatorname{rec}(F,\bar X,\bar B,\rho)
+\rho_r=\mathrm{rec}(F,\bar X,\bar B,\rho)
 $$
 
 Las demostraciones siguientes distinguen entre la corrección de las funciones analizadas y la terminación de las expresiones que estas evalúan. Una función del intérprete puede implementar correctamente su regla de evaluación, aunque el cuerpo de un programa del usuario no termine.
@@ -168,12 +168,12 @@ Su especificación es:
 Formalmente, sean $n=|X|$ y $m=|\bar v|$:
 
 $$
-\operatorname{Post}(p,\bar v,r)\equiv
+\mathrm{Post}(p,\bar v,r)\equiv
 \begin{cases}
 r=\text{value-of}
-(B,\operatorname{ext}(X,\bar v,\rho_c))
+(B,\mathrm{ext}(X,\bar v,\rho_c))
 & \text{si }m=n\\
-r=\operatorname{error}
+r=\mathrm{error}
 & \text{si }m\neq n
 \end{cases}
 $$
@@ -270,7 +270,7 @@ Cuando las cantidades coinciden, se ejecuta la rama verdadera del `if`:
 La expresión del cuerpo se evalúa en el ambiente:
 
 $$
-\rho_b=\operatorname{ext}(X,\bar v,\rho_c)
+\rho_b=\mathrm{ext}(X,\bar v,\rho_c)
 $$
 
 Por consiguiente:
@@ -341,13 +341,13 @@ Por tanto, el ambiente empleado para evaluar el cuerpo se construye a partir del
 Sea $c=\langle X,B,\rho_c\rangle$ una clausura aplicada en el ambiente $\rho_{\text{llamada}}$, con la cantidad correcta de argumentos $\bar v$. Entonces, el cuerpo se evalúa en:
 
 $$
-\rho_b=\operatorname{ext}(X,\bar v,\rho_c)
+\rho_b=\mathrm{ext}(X,\bar v,\rho_c)
 $$
 
 y no en:
 
 $$
-\operatorname{ext}(X,\bar v,\rho_{\text{llamada}})
+\mathrm{ext}(X,\bar v,\rho_{\text{llamada}})
 $$
 
 **Demostración.**
@@ -378,7 +378,7 @@ El programa define `escalar` cuando `factor` vale `10`. Posteriormente, establec
 Definamos los ambientes:
 
 $$
-\rho_1=\operatorname{ext}((factor),(10),\rho_0)
+\rho_1=\mathrm{ext}((factor),(10),\rho_0)
 $$
 
 La clausura se crea en $\rho_1$:
@@ -390,13 +390,13 @@ $$
 A continuación:
 
 $$
-\rho_2=\operatorname{ext}((escalar),(c),\rho_1)
+\rho_2=\mathrm{ext}((escalar),(c),\rho_1)
 $$
 
 y la nueva ligadura de `factor` crea:
 
 $$
-\rho_3=\operatorname{ext}((factor),(1000),\rho_2)
+\rho_3=\mathrm{ext}((factor),(1000),\rho_2)
 $$
 
 La aplicación ocurre en $\rho_3$.
@@ -406,7 +406,7 @@ La aplicación ocurre en $\rho_3$.
 La función extiende el ambiente capturado:
 
 $$
-\rho_4=\operatorname{ext}((v),(5),\rho_1)
+\rho_4=\mathrm{ext}((v),(5),\rho_1)
 $$
 
 Al buscar `factor`, el intérprete no lo encuentra en la ligadura de `v` y continúa en $\rho_1$, donde encuentra el valor `10`.
@@ -422,7 +422,7 @@ $$
 Si se utilizara el ambiente de llamada, se construiría:
 
 $$
-\rho_4'=\operatorname{ext}((v),(5),\rho_3)
+\rho_4'=\mathrm{ext}((v),(5),\rho_3)
 $$
 
 La búsqueda de `factor` encontraría primero la ligadura de valor `1000`:
@@ -469,7 +469,7 @@ Se consideran errores propios de la aplicación aquellos que `app-exp` y `apply-
 **Teorema.** Supóngase que la evaluación del operador y de los argumentos terminó sin error. Sea $v_f$ el valor del operador y sea $m$ la cantidad de argumentos. La aplicación genera un error propio si y solo si se cumple alguna de estas condiciones:
 
 $$
-\neg\operatorname{procval?}(v_f)
+\neg\mathrm{procval?}(v_f)
 $$
 
 o bien:
@@ -540,13 +540,13 @@ $$
 y:
 
 $$
-\rho_r=\operatorname{rec}(F,\bar X,\bar B,\rho)
+\rho_r=\mathrm{rec}(F,\bar X,\bar B,\rho)
 $$
 
 La propiedad principal que se desea demostrar es:
 
 $$
-\operatorname{buscar}(\rho_r,f_i)
+\mathrm{buscar}(\rho_r,f_i)
 =
 \langle X_i,B_i,\rho_r\rangle
 $$
@@ -601,6 +601,7 @@ La evaluación de `letrec` crea el ambiente recursivo y evalúa su cuerpo en ese
           env)))
     (evaluar-expresion body env-rec)))
 ```
+
 #### Representación de procedimientos mediante clausuras
 
 La implementación representa los procedimientos mediante el tipo de dato `procval`, cuya variante `cerradura` almacena tres componentes: la lista de parámetros (`ids`), el cuerpo del procedimiento (`body`) y el ambiente donde fue definido (`env`). El cuerpo se conserva sin evaluar hasta que el procedimiento es invocado.
@@ -618,7 +619,7 @@ En el caso de `ambiente-recursivo`, el argumento `env` de `apply-env` es el ambi
 Sea:
 
 $$
-\rho_r=\operatorname{rec}(F,\bar X,\bar B,\rho)
+\rho_r=\mathrm{rec}(F,\bar X,\bar B,\rho)
 $$
 
 el ambiente recursivo creado por `letrec`.
@@ -632,19 +633,19 @@ $$
 Cuando se aplica el procedimiento con valores de argumentos $\bar v$, el cuerpo se evalúa en:
 
 $$
-\rho_b=\operatorname{ext}(X_i,\bar v,\rho_r)
+\rho_b=\mathrm{ext}(X_i,\bar v,\rho_r)
 $$
 
 Definimos el siguiente invariante para el cuerpo del procedimiento $f_i$:
 
 $$
 \begin{aligned}
-\operatorname{Inv}_{\text{cuerpo}}(\rho_b,i)\equiv
+\mathrm{Inv}_{\text{cuerpo}}(\rho_b,i)\equiv
 \forall j\in\{1,\ldots,k\},\quad
 &\bigl(f_j\text{ es la primera aparición de su nombre en }F\\
 &\land f_j\notin X_i\bigr)\\
 &\Rightarrow
-\operatorname{buscar}(\rho_b,f_j)
+\mathrm{buscar}(\rho_b,f_j)
 =\langle X_j,B_j,\rho_r\rangle
 \end{aligned}
 $$
@@ -658,7 +659,7 @@ La condición $f_j\notin X_i$ es importante porque los parámetros pueden oculta
 Sea $f_i$ un nombre de procedimiento cuya primera aparición se encuentra en la posición $i$ de $F$. Entonces:
 
 $$
-\operatorname{buscar}(\rho_r,f_i)
+\mathrm{buscar}(\rho_r,f_i)
 =
 \langle X_i,B_i,\rho_r\rangle
 $$
@@ -687,11 +688,11 @@ Sea:
 
 $$
 \sigma=
-\operatorname{ext}
+\mathrm{ext}
 (Y_1,W_1,
-\operatorname{ext}
+\mathrm{ext}
 (Y_2,W_2,\ldots
-\operatorname{ext}(Y_t,W_t,\rho_r)))
+\mathrm{ext}(Y_t,W_t,\rho_r)))
 $$
 
 Supóngase que:
@@ -705,9 +706,9 @@ $$
 Entonces:
 
 $$
-\operatorname{buscar}(\sigma,f_j)
+\mathrm{buscar}(\sigma,f_j)
 =
-\operatorname{buscar}(\rho_r,f_j)
+\mathrm{buscar}(\rho_r,f_j)
 $$
 
 **Demostración por inducción sobre $t$.**
@@ -717,9 +718,9 @@ $$
 No hay extensiones y $\sigma=\rho_r$. Por tanto:
 
 $$
-\operatorname{buscar}(\sigma,f_j)
+\mathrm{buscar}(\sigma,f_j)
 =
-\operatorname{buscar}(\rho_r,f_j)
+\mathrm{buscar}(\rho_r,f_j)
 $$
 
 La propiedad se cumple.
@@ -737,7 +738,7 @@ Por tanto, la propiedad se cumple para cualquier cantidad finita de extensiones.
 **Teorema.** Para todo procedimiento $f_i$ cuya primera aparición se encuentra en la posición $i$, el ambiente de evaluación de su cuerpo satisface:
 
 $$
-\operatorname{Inv}_{\text{cuerpo}}(\rho_b,i)
+\mathrm{Inv}_{\text{cuerpo}}(\rho_b,i)
 $$
 
 **Demostración.**
@@ -751,21 +752,21 @@ $$
 Al aplicar esa clausura, `apply-procedure` construye el ambiente del cuerpo:
 
 $$
-\rho_b=\operatorname{ext}(X_i,\bar v,\rho_r)
+\rho_b=\mathrm{ext}(X_i,\bar v,\rho_r)
 $$
 
 Sea $f_j$ un procedimiento declarado en el mismo bloque que no pertenece a $X_i$. Por el Lema 2, como la extensión de parámetros no contiene $f_j$, se cumple:
 
 $$
-\operatorname{buscar}(\rho_b,f_j)
+\mathrm{buscar}(\rho_b,f_j)
 =
-\operatorname{buscar}(\rho_r,f_j)
+\mathrm{buscar}(\rho_r,f_j)
 $$
 
 Por el Lema 1:
 
 $$
-\operatorname{buscar}(\rho_r,f_j)
+\mathrm{buscar}(\rho_r,f_j)
 =
 \langle X_j,B_j,\rho_r\rangle
 $$
@@ -773,7 +774,7 @@ $$
 En consecuencia:
 
 $$
-\operatorname{buscar}(\rho_b,f_j)
+\mathrm{buscar}(\rho_b,f_j)
 =
 \langle X_j,B_j,\rho_r\rangle
 $$
@@ -809,7 +810,7 @@ $$
 y después se crea:
 
 $$
-\rho'=\operatorname{ext}((f),(c),\rho)
+\rho'=\mathrm{ext}((f),(c),\rho)
 $$
 
 La clausura captura $\rho$, no $\rho'$. Por tanto, no existe una garantía de que su propio nombre pueda resolverse mediante el ambiente capturado.
@@ -927,7 +928,7 @@ Se producen once invocaciones del cuerpo: diez llamadas recursivas y una llamada
 Se demuestra por inducción sobre $e$ que:
 
 $$
-\operatorname{potencia}(b,e)=b^e
+\mathrm{potencia}(b,e)=b^e
 $$
 
 **Caso base: $e=0$.**
@@ -935,7 +936,7 @@ $$
 El procedimiento retorna $1$, por lo que:
 
 $$
-\operatorname{potencia}(b,0)=1=b^0
+\mathrm{potencia}(b,0)=1=b^0
 $$
 
 **Caso inductivo: $e>0$.**
@@ -943,19 +944,19 @@ $$
 La función retorna:
 
 $$
-b\cdot\operatorname{potencia}(b,e-1)
+b\cdot\mathrm{potencia}(b,e-1)
 $$
 
 Por hipótesis de inducción:
 
 $$
-\operatorname{potencia}(b,e-1)=b^{e-1}
+\mathrm{potencia}(b,e-1)=b^{e-1}
 $$
 
 Entonces:
 
 $$
-b\cdot\operatorname{potencia}(b,e-1)
+b\cdot\mathrm{potencia}(b,e-1)
 =
 b\cdot b^{e-1}
 =
@@ -967,7 +968,7 @@ La propiedad se cumple para $e$.
 Por tanto:
 
 $$
-\operatorname{potencia}(2,10)=2^{10}=1024
+\mathrm{potencia}(2,10)=2^{10}=1024
 $$
 
 La demostración de terminación depende de que el exponente pertenezca a $\mathbb{N}$. Con exponentes negativos o no enteros, la medida anterior no garantiza que el procedimiento alcance el caso base.
@@ -1021,9 +1022,9 @@ $$
 La postcondición se expresa como:
 
 $$
-\operatorname{Post}\equiv
+\mathrm{Post}\equiv
 \begin{cases}
-\operatorname{error}
+\mathrm{error}
 & \text{si }v\text{ no es numérico}\\
 \text{value-of}(a_i,\rho),
 \quad i=\min\{j:k_j=v\}

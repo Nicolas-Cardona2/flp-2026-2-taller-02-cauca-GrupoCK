@@ -601,6 +601,13 @@ La evaluación de `letrec` crea el ambiente recursivo y evalúa su cuerpo en ese
           env)))
     (evaluar-expresion body env-rec)))
 ```
+#### Representación de procedimientos mediante clausuras
+
+La implementación representa los procedimientos mediante el tipo de dato `procval`, cuya variante `cerradura` almacena tres componentes: la lista de parámetros (`ids`), el cuerpo del procedimiento (`body`) y el ambiente donde fue definido (`env`). El cuerpo se conserva sin evaluar hasta que el procedimiento es invocado.
+
+Esta representación permite implementar el alcance léxico. En `apply-procedure`, los argumentos se asocian con los parámetros mediante `ambiente-extendido`, utilizando como ambiente padre el ambiente capturado por la clausura. De esta manera, el cuerpo se evalúa en el entorno donde se definió el procedimiento, extendido con los valores de sus argumentos, y no en el entorno desde el cual se realizó la llamada.
+
+En el caso de `letrec`, `apply-env` construye la clausura de un procedimiento declarado recursivamente utilizando el ambiente recursivo como ambiente capturado. Esto es fundamental para que, durante la evaluación del cuerpo del procedimiento, sus propias referencias y las de los demás procedimientos declarados en el mismo `letrec` puedan resolverse correctamente.
 
 En el caso de `ambiente-recursivo`, el argumento `env` de `apply-env` es el ambiente recursivo que se está consultando. La clausura debe capturar ese ambiente, no únicamente `env-padre`.
 

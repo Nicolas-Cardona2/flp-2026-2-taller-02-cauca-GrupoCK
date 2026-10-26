@@ -60,7 +60,7 @@ Para las demostraciones se utiliza la siguiente notación:
 - $\mathrm{ext}(X,V,\rho)$: ambiente extendido con identificadores $X$, valores $V$ y ambiente padre $\rho$.
 - $\mathrm{rec}(F,\bar X,\bar B,\rho)$: ambiente recursivo con nombres de procedimientos $F$, listas de parámetros $\bar X$, cuerpos $\bar B$ y ambiente exterior $\rho$.
 - $\langle X,B,\rho\rangle$: clausura con parámetros $X$, cuerpo $B$ y ambiente capturado $\rho$.
-- $\text{value-of}(e,\rho)$: resultado de evaluar la expresión $e$ en el ambiente $\rho$.
+- $\mathrm{value{-}of}(e,\rho)$: resultado de evaluar la expresión $e$ en el ambiente $\rho$.
 - $\mathrm{error}$: resultado de una evaluación que levanta un error explícito mediante `eopl:error`.
 
 ### 2.1. Búsqueda de identificadores
@@ -76,23 +76,13 @@ $$
 En un ambiente extendido, si $y$ se encuentra entre los identificadores ligados, se retorna el valor correspondiente. En caso contrario, la búsqueda continúa en el ambiente padre:
 
 $$
-\mathrm{buscar}(\mathrm{ext}(X,V,\rho),y)=
-\begin{cases}
-v_i & \text{si } i=\min\{j:x_j=y\}\\
-\mathrm{buscar}(\rho,y) & \text{si } y\notin X
-\end{cases}
+\mathrm{buscar}(\mathrm{ext}(X,V,\rho),y)= \begin{cases} v_i & \text{si } i=\min\{j:x_j=y\}\\ \mathrm{buscar}(\rho,y) & \text{si } y\notin X \end{cases}
 $$
 
 En un ambiente recursivo, si el identificador corresponde a un procedimiento declarado, se construye una clausura cuyo ambiente capturado es el propio ambiente recursivo:
 
 $$
-\mathrm{buscar}(\mathrm{rec}(F,\bar X,\bar B,\rho),y)=
-\begin{cases}
-\langle X_i,B_i,\rho_r\rangle
-& \text{si } i=\min\{j:f_j=y\}\\
-\mathrm{buscar}(\rho,y)
-& \text{si } y\notin F
-\end{cases}
+\mathrm{buscar}(\mathrm{rec}(F,\bar X,\bar B,\rho),y)= \begin{cases} \langle X_i,B_i,\rho_r\rangle & \text{si } i=\min\{j:f_j=y\}\\ \mathrm{buscar}(\rho,y) & \text{si } y\notin F \end{cases}
 $$
 
 donde:
@@ -108,39 +98,31 @@ Esta última regla es fundamental para la corrección de `letrec`: la clausura c
 La evaluación de una expresión `proc` construye una clausura sin evaluar su cuerpo:
 
 $$
-\text{value-of}(\text{proc-exp}(X,B),\rho)
-=
-\langle X,B,\rho\rangle
+\mathrm{value{-}of}(\mathrm{proc{-}exp}(X,B),\rho) = \langle X,B,\rho\rangle
 $$
 
 La aplicación evalúa el operador y los argumentos, y posteriormente invoca el procedimiento:
 
 $$
-\text{value-of}
-(\text{app-exp}(r,(e_1,\ldots,e_m)),\rho)
-=
-\text{apply-procedure}(v_f,(v_1,\ldots,v_m))
+\mathrm{value{-}of} (\mathrm{app{-}exp}(r,(e_1,\ldots,e_m)),\rho) = \mathrm{apply{-}procedure}(v_f,(v_1,\ldots,v_m))
 $$
 
 donde:
 
 $$
-v_f=\text{value-of}(r,\rho)
+v_f=\mathrm{value{-}of}(r,\rho)
 $$
 
 y:
 
 $$
-v_i=\text{value-of}(e_i,\rho)
+v_i=\mathrm{value{-}of}(e_i,\rho)
 $$
 
 La evaluación de `letrec` crea primero el ambiente recursivo y después evalúa su cuerpo:
 
 $$
-\text{value-of}
-(\text{letrec-exp}(F,\bar X,\bar B,B_0),\rho)
-=
-\text{value-of}(B_0,\rho_r)
+\mathrm{value{-}of} (\mathrm{letrec{-}exp}(F,\bar X,\bar B,B_0),\rho) = \mathrm{value{-}of}(B_0,\rho_r)
 $$
 
 con:
@@ -168,14 +150,7 @@ Su especificación es:
 Formalmente, sean $n=|X|$ y $m=|\bar v|$:
 
 $$
-\mathrm{Post}(p,\bar v,r)\equiv
-\begin{cases}
-r=\text{value-of}
-(B,\mathrm{ext}(X,\bar v,\rho_c))
-& \text{si }m=n\\
-r=\mathrm{error}
-& \text{si }m\neq n
-\end{cases}
+\mathrm{Post}(p,\bar v,r)\equiv \begin{cases} r=\mathrm{value{-}of} (B,\mathrm{ext}(X,\bar v,\rho_c)) & \text{si }m=n\\ r=\mathrm{error} & \text{si }m\neq n \end{cases}
 $$
 
 La especificación presupone que la expresión del cuerpo puede evaluarse. Si el cuerpo levanta un error propio, dicho error se propaga.
@@ -276,7 +251,7 @@ $$
 Por consiguiente:
 
 $$
-r=\text{value-of}(B,\rho_b)
+r=\mathrm{value{-}of}(B,\rho_b)
 $$
 
 Esto satisface la primera alternativa de la postcondición.
@@ -475,9 +450,7 @@ $$
 o bien:
 
 $$
-v_f=\langle X,B,\rho_c\rangle
-\quad\land\quad
-|X|\neq m
+v_f=\langle X,B,\rho_c\rangle \quad\land\quad |X|\neq m
 $$
 
 **Demostración.**
@@ -546,9 +519,7 @@ $$
 La propiedad principal que se desea demostrar es:
 
 $$
-\mathrm{buscar}(\rho_r,f_i)
-=
-\langle X_i,B_i,\rho_r\rangle
+\mathrm{buscar}(\rho_r,f_i) = \langle X_i,B_i,\rho_r\rangle
 $$
 
 para cada procedimiento que corresponda a la primera aparición de su nombre.
@@ -639,15 +610,7 @@ $$
 Definimos el siguiente invariante para el cuerpo del procedimiento $f_i$:
 
 $$
-\begin{aligned}
-\mathrm{Inv}_{\text{cuerpo}}(\rho_b,i)\equiv
-\forall j\in\{1,\ldots,k\},\quad
-&\bigl(f_j\text{ es la primera aparición de su nombre en }F\\
-&\land f_j\notin X_i\bigr)\\
-&\Rightarrow
-\mathrm{buscar}(\rho_b,f_j)
-=\langle X_j,B_j,\rho_r\rangle
-\end{aligned}
+\begin{aligned} \mathrm{Inv}_{\text{cuerpo}}(\rho_b,i)\equiv \forall j\in\{1,\ldots,k\},\quad &\bigl(f_j\text{ es la primera aparición de su nombre en }F\\ &\land f_j\notin X_i\bigr)\\ &\Rightarrow \mathrm{buscar}(\rho_b,f_j) =\langle X_j,B_j,\rho_r\rangle \end{aligned}
 $$
 
 El invariante afirma que todo nombre de procedimiento declarado en el bloque recursivo que no esté oculto por un parámetro debe resolverse a la clausura correspondiente.
@@ -659,9 +622,7 @@ La condición $f_j\notin X_i$ es importante porque los parámetros pueden oculta
 Sea $f_i$ un nombre de procedimiento cuya primera aparición se encuentra en la posición $i$ de $F$. Entonces:
 
 $$
-\mathrm{buscar}(\rho_r,f_i)
-=
-\langle X_i,B_i,\rho_r\rangle
+\mathrm{buscar}(\rho_r,f_i) = \langle X_i,B_i,\rho_r\rangle
 $$
 
 **Demostración.**
@@ -687,28 +648,19 @@ Esto demuestra el lema. $\square$
 Sea:
 
 $$
-\sigma=
-\mathrm{ext}
-(Y_1,W_1,
-\mathrm{ext}
-(Y_2,W_2,\ldots
-\mathrm{ext}(Y_t,W_t,\rho_r)))
+\sigma= \mathrm{ext} (Y_1,W_1, \mathrm{ext} (Y_2,W_2,\ldots \mathrm{ext}(Y_t,W_t,\rho_r)))
 $$
 
 Supóngase que:
 
 $$
-f_j\notin Y_s
-\qquad
-\text{para todo }s\in\{1,\ldots,t\}
+f_j\notin Y_s \qquad \text{para todo }s\in\{1,\ldots,t\}
 $$
 
 Entonces:
 
 $$
-\mathrm{buscar}(\sigma,f_j)
-=
-\mathrm{buscar}(\rho_r,f_j)
+\mathrm{buscar}(\sigma,f_j) = \mathrm{buscar}(\rho_r,f_j)
 $$
 
 **Demostración por inducción sobre $t$.**
@@ -718,9 +670,7 @@ $$
 No hay extensiones y $\sigma=\rho_r$. Por tanto:
 
 $$
-\mathrm{buscar}(\sigma,f_j)
-=
-\mathrm{buscar}(\rho_r,f_j)
+\mathrm{buscar}(\sigma,f_j) = \mathrm{buscar}(\rho_r,f_j)
 $$
 
 La propiedad se cumple.
@@ -758,25 +708,19 @@ $$
 Sea $f_j$ un procedimiento declarado en el mismo bloque que no pertenece a $X_i$. Por el Lema 2, como la extensión de parámetros no contiene $f_j$, se cumple:
 
 $$
-\mathrm{buscar}(\rho_b,f_j)
-=
-\mathrm{buscar}(\rho_r,f_j)
+\mathrm{buscar}(\rho_b,f_j) = \mathrm{buscar}(\rho_r,f_j)
 $$
 
 Por el Lema 1:
 
 $$
-\mathrm{buscar}(\rho_r,f_j)
-=
-\langle X_j,B_j,\rho_r\rangle
+\mathrm{buscar}(\rho_r,f_j) = \langle X_j,B_j,\rho_r\rangle
 $$
 
 En consecuencia:
 
 $$
-\mathrm{buscar}(\rho_b,f_j)
-=
-\langle X_j,B_j,\rho_r\rangle
+\mathrm{buscar}(\rho_b,f_j) = \langle X_j,B_j,\rho_r\rangle
 $$
 
 Esta es la propiedad exigida por el invariante. Como el razonamiento vale para cada procedimiento que cumpla las condiciones indicadas, el invariante se mantiene.
@@ -956,11 +900,7 @@ $$
 Entonces:
 
 $$
-b\cdot\mathrm{potencia}(b,e-1)
-=
-b\cdot b^{e-1}
-=
-b^e
+b\cdot\mathrm{potencia}(b,e-1) = b\cdot b^{e-1} = b^e
 $$
 
 La propiedad se cumple para $e$.
@@ -1006,7 +946,7 @@ La especificación es:
 Sea:
 
 $$
-v=\text{value-of}(e,\rho)
+v=\mathrm{value{-}of}(e,\rho)
 $$
 
 y sean:
@@ -1022,16 +962,7 @@ $$
 La postcondición se expresa como:
 
 $$
-\mathrm{Post}\equiv
-\begin{cases}
-\mathrm{error}
-& \text{si }v\text{ no es numérico}\\
-\text{value-of}(a_i,\rho),
-\quad i=\min\{j:k_j=v\}
-& \text{si existe una coincidencia}\\
-\text{value-of}(d,\rho)
-& \text{si no existe ninguna coincidencia}
-\end{cases}
+\mathrm{Post}\equiv \begin{cases} \mathrm{error} & \text{si }v\text{ no es numérico}\\ \mathrm{value{-}of}(a_i,\rho), \quad i=\min\{j:k_j=v\} & \text{si existe una coincidencia}\\ \mathrm{value{-}of}(d,\rho) & \text{si no existe ninguna coincidencia} \end{cases}
 $$
 
 donde $d$ representa la expresión predeterminada.
@@ -1091,14 +1022,7 @@ Sea $S(V,A)$ la siguiente propiedad:
 Para listas de valores $V=(k_1,\ldots,k_m)$ y acciones $A=(a_1,\ldots,a_m)$ de igual longitud, un valor numérico $c$, una expresión predeterminada $d$ y un ambiente $\rho$:
 
 $$
-\text{seleccionar-caso}(c,V,A,d,\rho)
-=
-\begin{cases}
-\text{value-of}(a_i,\rho),
-& i=\min\{j:k_j=c\}\\
-\text{value-of}(d,\rho),
-& \text{si no existe coincidencia}
-\end{cases}
+\mathrm{seleccionar{-}caso}(c,V,A,d,\rho) = \begin{cases} \mathrm{value{-}of}(a_i,\rho), & i=\min\{j:k_j=c\}\\ \mathrm{value{-}of}(d,\rho), & \text{si no existe coincidencia} \end{cases}
 $$
 
 Esta propiedad establece que se selecciona la acción asociada a la primera coincidencia y que la expresión predeterminada se utiliza únicamente cuando no hay coincidencias.
@@ -1125,7 +1049,7 @@ La primera condición del `cond` es verdadera:
 La función retorna el valor de la expresión predeterminada:
 
 $$
-\text{value-of}(d,\rho)
+\mathrm{value{-}of}(d,\rho)
 $$
 
 Como no existen elementos en $V$, no puede existir ninguna coincidencia.
@@ -1164,7 +1088,7 @@ es verdadera.
 La función retorna:
 
 $$
-\text{value-of}(a_1,\rho)
+\mathrm{value{-}of}(a_1,\rho)
 $$
 
 Como la primera posición ya coincide, no es necesario recorrer las listas restantes. La acción seleccionada es la de menor índice.
